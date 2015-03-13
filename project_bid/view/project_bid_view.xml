@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="view_project_bid_total_costs_line" model="ir.ui.view">
+            <field name="name">project.bid.total.costs.line.tree</field>
+            <field name="model">project.bid.total.costs.line</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Total Costs Line">
+                    <field name="name"/>
+                    <field name="quantity" sum="Total Quantity"/>
+                    <field name="unit_cost"/>
+                    <field name="total_cost" sum="Total Cost"/>
+                </tree>
+            </field>
+        </record>
+        <record id="view_project_bid_totals" model="ir.ui.view">
+            <field name="name">project.bid.totals.tree</field>
+            <field name="model">project.bid.totals</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Totals">
+                    <field name="name"/>
+                    <field name="cost" sum="Total Cost"/>
+                    <field name="markup"/>
+                    <field name="sell_total" sum="Total Sell"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_project_bid_component_labor" model="ir.ui.view">
+            <field name="name">project.bid.component.labor.tree</field>
+            <field name="model">project.bid.component.labor</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Component-specific labor" editable="top">
+                    <field name="product_id"/>
+                    <field name="quantity"/>
+                    <field name="uom_id"/>
+                    <field name="unit_cost"/>
+                    <field name="total_cost"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_project_bid_component_tree" model="ir.ui.view">
+            <field name="name">project.bid.component.tree</field>
+            <field name="model">project.bid.component</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Components">
+                    <field name="default_code"/>
+                    <field name="name"/>
+                    <field name="quantity"/>
+                    <field name="unit_cost"/>
+                    <field name="discount_cost"/>
+                    <field name="markup"/>
+                    <field name="sale_price"/>
+                    <field name="component_cost"/>
+                    <field name="component_sell"/>
+                    <field name="labor_sell"/>
+                    <field name="total_sell"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_project_bid_component_form" model="ir.ui.view">
+            <field name="name">project.bid.component.form</field>
+            <field name="model">project.bid.component</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Project Bid Component" version="7.0">
+                    <group>
+                        <field name="product_id"
+                               on_change="on_change_product_id(product_id)"/>
+                        <field name="default_code"/>
+                        <field name="name"/>
+                        <field name="quantity"/>
+                        <field name="unit_cost"/>
+                        <field name="discount_cost"/>
+                        <field name="markup"/>
+                    </group>
+                    <group>
+                        <field name="labor"/>
+                    </group>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_project_bid_other_labor" model="ir.ui.view">
+            <field name="name">project.bid.other.labor.tree</field>
+            <field name="model">project.bid.other.labor</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Other Labor" editable="top">
+                    <field name="product_id"/>
+                    <field name="quantity"/>
+                    <field name="uom_id"/>
+                    <field name="unit_cost"/>
+                    <field name="total_cost"/>
+                </tree>
+            </field>
+        </record>
+        <record id="view_project_bid_other_expenses" model="ir.ui.view">
+            <field name="name">project.bid.other.expenses.tree</field>
+            <field name="model">project.bid.other.expenses</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Other Expenses" editable="top">
+                    <field name="product_id"/>
+                    <field name="quantity"/>
+                    <field name="uom_id"/>
+                    <field name="unit_cost"/>
+                    <field name="total_cost" sum="Total Cost"/>
+                    <field name="markup"/>
+                    <field name="total_sell" sum="Total Sell"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_project_bid_markup_over_costs" model="ir.ui.view">
+            <field name="name">project.bid.markup.over.costs.tree</field>
+            <field name="model">project.bid.markup.over.costs</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Markup over total costs" editable="top">
+                    <field name="name"/>
+                    <field name="markup"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_project_bid_form" model="ir.ui.view">
+            <field name="name">project.bid.form</field>
+            <field name="model">project.bid</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Project Bid" version="7.0">
+                    <header>
+                        <button name="action_button_confirm"
+                                states="draft"
+                                string="Confirm"
+                                type="object"
+                                class="oe_highlight"/>
+                        <button name="action_button_approve" states="confirm"
+                                string="Approve" type="object"
+                                class="oe_highlight"
+                                groups="project_bid.group_project_bid_manager"/>
+                        <button name="action_button_draft"
+                                states="confirm,approve,cancel"
+                                string="Reset to Draft" type="object"/>
+                        <button name="action_button_cancel"
+                                states="draft,confirm,approve" string="Cancel"
+                                type="object"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <group>
+                        <group>
+                            <field name="name" placeholder="Bid summary..."/>
+                            <field name="bid_template_id"/>
+                            <field name="project_id"/>
+                            <field name="partner_id"/>
+                            <field name="user_id"/>
+                        </group>
+                        <newline/>
+                        <group>
+                            <label string="Non material costs:"/>
+                            <newline/>
+                            <field name="totals_non_material" nolabel="1"/>
+                        </group>
+                        <newline/>
+                        <group>
+                            <label string="Total costs and sell prices:" />
+                            <newline/>
+                            <field name="totals_all" nolabel="1"/>
+                        </group>
+                        <group>
+                            <field name="total_cost"/>
+                            <field name="total_sell"/>
+                            <field name="gm_percent"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Components"
+                              name="components">
+                            <field name="components"
+                                   context="{'bid_template_id': bid_template_id}"/>
+                        </page>
+                        <page string="Other labor"
+                              name="other_labor">
+                            <field name="other_labor"/>
+                        </page>
+                        <page string="Other expenses"
+                              name="other_expenses">
+                            <field name="other_expenses"/>
+                        </page>
+                        <page string="Markups"
+                              name="markups">
+                            <field name="markup_over_costs"/>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <group>
+                                <field name="notes"/>
+                            </group>
+                        </page>
+                        <page string="Administration" name="admin">
+                            <group>
+                                <field name="created_on"/>
+                                <field name="created_by"/>
+                                <field name="approved_by"/>
+                                <field name="approved_on"/>
+                                <field name="due_by"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_project_bid_tree" model="ir.ui.view">
+            <field name="name">project.bid.tree</field>
+            <field name="model">project.bid</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+				<tree string="Bid"
+                      colors="red:due_by and (due_by &lt; current_date) and state=='draft';black:state in ('draft','approve');blue:state=='confirm';grey:state=='cancel'">
+                    <field name="name"/>
+                    <field name="project_id"/>
+                    <field name="partner_id"/>
+                    <field name="user_id"/>
+                    <field name="total_cost"/>
+                    <field name="total_sell"/>
+                    <field name="gm_percent"/>
+                    <field name="created_on"/>
+                    <field name="created_by"/>
+                    <field name="due_by"/>
+                    <field name="state"/>
+	            </tree>
+            </field>
+        </record>
+        <record id="view_project_bid_filter" model="ir.ui.view">
+            <field name="name">project.bid.select</field>
+            <field name="model">project.bid</field>
+            <field name="type">search</field>
+            <field name="arch" type="xml">
+                <search string="Search bids">
+                    <group col='6' colspan='5'>
+                        <field name="project_id"/>
+                        <field name="partner_id"/>
+                        <field name="user_id"/>
+                        <field name="name"/>
+                        <field name="created_on"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_project_bid_open_form" model="ir.actions.act_window">
+            <field name="name">Project Bid</field>
+            <field name="res_model">project.bid</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="view_project_bid_filter" />
+        </record>
+        
+		<record model="ir.actions.act_window.view"
+                id="action_project_bid_open_form_view">
+	        <field name="sequence" eval="1"/>
+	        <field name="view_mode">tree</field>
+	        <field name="view_id" ref="view_project_bid_tree"/>
+	        <field name="act_window_id" ref="action_project_bid_open_form"/>
+	   	</record>
+
+        <menuitem groups="project_bid.group_project_bid_user,project_bid.group_project_bid_manager"
+            action="action_project_bid_open_form"
+            id="project_bid_entries"
+            parent="project.menu_project_management"/>
+	</data>
+</openerp>

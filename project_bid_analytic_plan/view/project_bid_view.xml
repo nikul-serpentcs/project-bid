@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+
+        <record id="view_project_bid_form" model="ir.ui.view">
+            <field name="name">project.bid.form</field>
+            <field name="model">project.bid</field>
+            <field name="inherit_id" ref="project_bid.view_project_bid_form"/>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="Analytic Plan"
+                          name="analytic_plan">
+                        <field name="plan_lines"/>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+	</data>
+</openerp>
