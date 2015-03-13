@@ -135,9 +135,9 @@ class project_bid(orm.Model):
             avg_markup = 0.0
             items = 0
             for component in bid.components:
-                items += 1
                 total_material_cost += component.component_cost
-                avg_markup = (component.markup + avg_markup) / items
+                avg_markup = (component.markup + avg_markup*items) / (items+1)
+                items += 1
 
             val = {
                 'bid_id': bid.id,
