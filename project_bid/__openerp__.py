@@ -33,8 +33,8 @@ Project Bid
     """,
     "init_xml": [],
     "update_xml": [
-        "view/project_bid_template_view.xml",
         "security/project_bid_security.xml",
+        "view/project_bid_template_view.xml",
         "view/project_bid_view.xml",
         "security/ir.model.access.csv",
     ],
