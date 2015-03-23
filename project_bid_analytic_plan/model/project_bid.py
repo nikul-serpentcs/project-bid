@@ -158,12 +158,12 @@ class project_bid(orm.Model):
             'product_id': product_id.id,
             'product_uom_id': product_id.uom_id.id,
             'unit_amount': 1,
-            'amount': bid.total_sell,
+            'amount': bid.total_income,
             'general_account_id': general_account_id,
             'journal_id': journal_id,
             'version_id': version_id,
             'currency_id': account_id.company_id.currency_id.id,
-            'amount_currency': bid.total_sell,
+            'amount_currency': bid.total_income,
         }]
 
     def create_revenue_plan_lines(self, cr, uid, bid, context=None):
@@ -176,8 +176,8 @@ class project_bid(orm.Model):
             res.append(line_id)
         return res
 
-    def action_button_approve(self, cr, uid, ids, form, context=None):
-        res = super(project_bid, self).action_button_approve(
+    def action_button_confirm(self, cr, uid, ids, form, context=None):
+        res = super(project_bid, self).action_button_confirm(
             cr, uid, ids, form, context=context)
 
         for bid in self.browse(cr, uid, ids, context=context):

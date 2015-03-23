@@ -23,17 +23,13 @@
                     </group>
                     <group>
                         <field name="labor_uom_id"/>
+                        <field name="overhead_rate"/>
+                        <field name="profit_rate"/>
                     </group>
                     <notebook>
                         <page string="Component Labor" name="component_labor">
                             <group>
                                 <field name="default_component_labor"/>
-                            </group>
-                        </page>
-                        <page string="Markup" name="markup">
-                            <group>
-                                <field name="material_markup"/>
-                                <field name="labor_markup"/>
                             </group>
                         </page>
                     </notebook>
