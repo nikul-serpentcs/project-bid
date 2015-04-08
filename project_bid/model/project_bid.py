@@ -613,6 +613,8 @@ class project_bid(orm.Model):
         'created_by': lambda obj, cr, uid, ctx=None: uid,
     }
 
+    _order = 'project_id'
+
     def copy(self, cr, uid, id, default=None, context=None):
         if default is None:
             default = {}
