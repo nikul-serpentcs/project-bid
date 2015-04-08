@@ -172,6 +172,7 @@
                             <field name="project_id"/>
                             <field name="partner_id"/>
                             <field name="user_id"/>
+                            <field name="use_child"/>
                         </group>
                         <newline/>
                         <group>
@@ -241,6 +242,7 @@
                     <field name="project_id"/>
                     <field name="partner_id"/>
                     <field name="user_id"/>
+                    <field name="use_child" string="Totalized"/>
                     <field name="total_income"/>
                     <field name="total_cogs"/>
                     <field name="total_gp"/>

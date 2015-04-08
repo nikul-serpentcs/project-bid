@@ -25,7 +25,7 @@
     "author": "Eficent",
     "website": "www.eficent.com",
     "category": "Generic Modules/Projects & Services",
-    "depends": ["project", "analytic_plan"],
+    "depends": ["project", "analytic_plan", "project_wbs"],
     "description": """
 Project Bid
 ============
