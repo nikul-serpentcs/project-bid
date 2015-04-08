@@ -68,7 +68,8 @@ class project_bid(orm.Model):
             cr, uid, [bid.project_id.id], context=context)
         cr.execute('''SELECT id
         FROM project_bid
-        WHERE project_id IN %s''', (tuple(project_ids), ))
+        WHERE project_id IN %s
+        AND state <> %s''', (tuple(project_ids), 'cancel'))
         results = cr.fetchall()
         for result in results:
             res.append(result[0])
