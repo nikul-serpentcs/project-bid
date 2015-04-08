@@ -14,7 +14,10 @@
                 <xpath expr="//notebook" position="inside">
                     <page string="Analytic Plan"
                           name="analytic_plan">
-                        <field name="plan_lines"/>
+                        <group>
+                            <field name="plan_lines" readonly="1"
+                                   nolabel="1"/>
+                        </group>
                     </page>
                 </xpath>
             </field>

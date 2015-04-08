@@ -34,8 +34,8 @@ class project_bid_template(orm.Model):
             'product.product',
             string='Default component labor',
             required=False),
-        'profit_rate': fields.float('Default profit %'),
-        'overhead_rate': fields.float('Default overhead %'),
+        'profit_rate': fields.float('Profit (%)', help="Profit as % of COGS"),
+        'overhead_rate': fields.float('Default overhead (%)'),
         'labor_uom_id': fields.many2one('product.uom', 'Default labor UoM',
                                         required=True),
     }

@@ -34,11 +34,11 @@ class project_bid_total_labor(orm.TransientModel):
                                   required=True),
         'name': fields.char('Description', size=256),
         'quantity': fields.float('Hours'),
-        'direct_cost': fields.float('Direct cost'),
+        'cogs': fields.float('COGS'),
         'overhead': fields.float('Overhead cost'),
         'cost': fields.float('Total cost'),
         'profit': fields.float('Profit'),
-        'sell': fields.float('Sell price'),
+        'sell': fields.float('Revenue'),
     }
 
 
@@ -49,11 +49,11 @@ class project_bid_totals(orm.TransientModel):
     _columns = {
         'bid_id': fields.many2one('project.bid', string='Bid', required=True),
         'name': fields.char('Description', size=256),
-        'direct_cost': fields.float('Direct cost'),
+        'cogs': fields.float('COGS'),
         'overhead': fields.float('Overhead cost'),
         'cost': fields.float('Total cost'),
         'profit': fields.float('Profit'),
-        'sell': fields.float('Sell price'),
+        'sell': fields.float('Revenue'),
     }
 
 
@@ -73,7 +73,7 @@ class project_bid(orm.Model):
                         items[labor.product_id.id] = {
                             'name': labor.product_id.name,
                             'quantity': labor.quantity,
-                            'direct_cost': labor.direct_cost,
+                            'cogs': labor.cogs,
                             'overhead': labor.overhead,
                             'cost': labor.cost,
                             'profit': labor.profit,
@@ -82,8 +82,8 @@ class project_bid(orm.Model):
                     else:
                         items[labor.product_id.id]['quantity'] \
                             += labor.quantity
-                        items[labor.product_id.id]['direct_cost'] \
-                            += labor.direct_cost
+                        items[labor.product_id.id]['cogs'] \
+                            += labor.cogs
                         items[labor.product_id.id]['overhead'] \
                             += labor.overhead
                         items[labor.product_id.id]['cost'] \
@@ -98,7 +98,7 @@ class project_bid(orm.Model):
                     items[labor.product_id.id] = {
                         'name': labor.product_id.name,
                         'quantity': labor.quantity,
-                        'direct_cost': labor.direct_cost,
+                        'cogs': labor.cogs,
                         'overhead': labor.overhead,
                         'cost': labor.cost,
                         'profit': labor.profit,
@@ -107,8 +107,8 @@ class project_bid(orm.Model):
                 else:
                     items[labor.product_id.id]['quantity'] \
                         += labor.quantity
-                    items[labor.product_id.id]['direct_cost'] \
-                        += labor.direct_cost
+                    items[labor.product_id.id]['cogs'] \
+                        += labor.cogs
                     items[labor.product_id.id]['overhead'] \
                         += labor.overhead
                     items[labor.product_id.id]['cost'] \
@@ -130,14 +130,14 @@ class project_bid(orm.Model):
 
         for bid in self.browse(cr, uid, ids, context=context):
             vals = []
-            material_direct_cost = 0.0
+            material_cogs = 0.0
             material_overhead = 0.0
             material_cost = 0.0
             material_profit = 0.0
             material_sell = 0.0
 
             for component in bid.components:
-                material_direct_cost += component.material_direct_cost
+                material_cogs += component.material_cogs
                 material_overhead += component.material_overhead
                 material_cost += component.material_cost
                 material_profit += component.material_profit
@@ -146,7 +146,7 @@ class project_bid(orm.Model):
             val = {
                 'bid_id': bid.id,
                 'name': 'Total material',
-                'direct_cost': material_direct_cost,
+                'cogs': material_cogs,
                 'overhead': material_overhead,
                 'cost': material_cost,
                 'profit': material_profit,
@@ -156,13 +156,13 @@ class project_bid(orm.Model):
             vals.append(line_id)
 
             # Total labor
-            labor_direct_cost = 0.0
+            labor_cogs = 0.0
             labor_overhead = 0.0
             labor_cost = 0.0
             labor_profit = 0.0
             labor_sell = 0.0
             for labor in bid.totals_non_material:
-                labor_direct_cost += labor.direct_cost
+                labor_cogs += labor.cogs
                 labor_overhead += labor.overhead
                 labor_cost += labor.cost
                 labor_profit += labor.profit
@@ -171,7 +171,7 @@ class project_bid(orm.Model):
             val = {
                 'bid_id': bid.id,
                 'name': 'Total labor',
-                'direct_cost': labor_direct_cost,
+                'cogs': labor_cogs,
                 'overhead': labor_overhead,
                 'cost': labor_cost,
                 'profit': labor_profit,
@@ -185,7 +185,7 @@ class project_bid(orm.Model):
                 val = {
                     'bid_id': bid.id,
                     'name': expense.product_id.name,
-                    'direct_cost': expense.direct_cost,
+                    'cogs': expense.cogs,
                     'overhead': expense.overhead,
                     'cost': expense.cost,
                     'profit': expense.profit,
@@ -199,34 +199,33 @@ class project_bid(orm.Model):
     def _get_totals(self, cr, uid, ids, name, args, context=None):
         res = dict.fromkeys(ids, False)
         for bid in self.browse(cr, uid, ids, context=context):
-            total_income = 0.0
-            total_direct_cost = 0.0
+            total_cogs = 0.0
             total_overhead = 0.0
             total_cost = 0.0
             total_profit = 0.0
             total_sell = 0.0
             for total in bid.totals_all:
-                total_direct_cost += total.direct_cost
+                total_cogs += total.cogs
                 total_overhead += total.overhead
                 total_cost += total.cost
                 total_profit += total.profit
                 total_sell += total.sell
 
-            # Gross margin
-            total_gm = total_sell - total_direct_cost
-            total_gm_percent = round((total_gm/total_direct_cost)*100, 2)
+            # Gross profit and gross margin
+            total_gp = total_sell - total_cogs
+            total_gm_percent = round((total_gp/total_sell)*100, 2)
             # Profit Margin
             total_npm = total_sell - total_cost
-            total_npm_percent = round((total_npm/total_cost)*100, 2)
+            total_npm_percent = round((total_npm/total_sell)*100, 2)
 
             res[bid.id] = {
                 'total_income': total_sell,
-                'total_cogs': total_direct_cost,
+                'total_cogs': total_cogs,
                 'total_gm_percent': total_gm_percent,
-                'total_gm': total_gm,
+                'total_gp': total_gp,
                 'total_overhead': total_overhead,
                 'total_npm': total_npm,
-                'total_npm_percent':total_npm_percent,
+                'total_npm_percent': total_npm_percent,
             }
         return res
 
@@ -320,14 +319,14 @@ class project_bid(orm.Model):
                                           states={'draft': [('readonly',
                                                              False)]}),
         'total_income': fields.function(_get_totals, type='float',
-                                         multi='totals', string='Income'),
+                                        multi='totals', string='Revenue'),
         'total_cogs': fields.function(_get_totals, type='float',
                                       multi='totals', string='Cost of Sales'),
         'total_gm_percent': fields.function(_get_totals, type='float',
                                             multi='totals',
-                                            string='Gross Margin %'),
-        'total_gm': fields.function(_get_totals, type='float',
-                                    multi='totals', string='Gross Margin'),
+                                            string='Gross Margin (%)'),
+        'total_gp': fields.function(_get_totals, type='float',
+                                    multi='totals', string='Gross Profit'),
         'total_overhead': fields.function(_get_totals, type='float',
                                           multi='totals',
                                           string='Total Overhead'),
@@ -336,7 +335,7 @@ class project_bid(orm.Model):
                                      string='Net Profit Margin'),
         'total_npm_percent': fields.function(_get_totals, type='float',
                                              multi='totals',
-                                             string='Net Profit Margin %'),
+                                             string='Net Profit Margin (%)'),
 
     }
 
@@ -388,46 +387,48 @@ class project_bid_component(orm.Model):
     def _get_totals(self, cr, uid, ids, name, args, context=None):
         res = dict.fromkeys(ids, False)
         for record in self.browse(cr, uid, ids, context=context):
-            labor_direct_cost = 0.0
+            labor_cogs = 0.0
             labor_overhead = 0.0
             labor_cost = 0.0
             labor_profit = 0.0
             labor_sell = 0.0
             for labor in record.labor:
-                labor_direct_cost += labor.direct_cost
+                labor_cogs += labor.cogs
                 labor_overhead += labor.overhead
                 labor_cost += labor.cost
                 labor_profit += labor.profit
                 labor_sell += labor.sell
 
-            material_direct_cost = record.quantity*record.unit_cost
-            material_overhead = material_direct_cost*record.overhead_rate/100
-            material_cost = material_overhead + material_direct_cost
-            material_profit = material_cost*record.profit_rate/100
+            material_cogs = record.quantity*record.unit_cost
+            material_overhead = material_cogs*record.overhead_rate/100
+            material_cost = material_overhead + material_cogs
+            material_profit = material_cogs*record.profit_rate/100
             material_sell = material_cost + material_profit
 
-            total_direct_cost = material_direct_cost + labor_direct_cost
+            total_cogs = material_cogs + labor_cogs
             total_overhead = material_overhead + labor_overhead
             total_cost = labor_cost + material_cost
             total_profit = material_profit + labor_profit
-            total_sell = total_cost + total_profit
+            total_sell = total_cogs + total_overhead + total_profit
+            gross_profit = total_sell - total_cogs
 
             res[record.id] = {
-                'material_direct_cost': material_direct_cost,
+                'material_cogs': material_cogs,
                 'material_overhead': material_overhead,
                 'material_cost': material_cost,
                 'material_profit': material_profit,
                 'material_sell': material_sell,
-                'labor_direct_cost': labor_direct_cost,
+                'labor_cogs': labor_cogs,
                 'labor_overhead': labor_overhead,
                 'labor_cost': labor_cost,
                 'labor_profit': labor_profit,
                 'labor_sell': labor_sell,
-                'total_direct_cost': total_direct_cost,
+                'total_cogs': total_cogs,
                 'total_overhead': total_overhead,
                 'total_cost': total_cost,
                 'total_profit': total_profit,
                 'total_sell': total_sell,
+                'gross_profit': gross_profit,
             }
         return res
 
@@ -454,9 +455,10 @@ class project_bid_component(orm.Model):
         'overhead_rate': fields.float(
             'Overhead %', digits_compute=dp.get_precision('Account')),
         'profit_rate': fields.float(
-            'Profit %', ditits_compute=dp.get_precision('Account')),
-        'material_direct_cost': fields.function(
-            _get_totals, type='float', string='Material direct cost',
+            'Profit (%) over COGS', ditits_compute=dp.get_precision('Account'),
+            help="Profit % over COGS"),
+        'material_cogs': fields.function(
+            _get_totals, type='float', string='Material COGS',
             multi='totals'),
         'material_overhead': fields.function(
             _get_totals, type='float', string='Material overhead',
@@ -470,8 +472,8 @@ class project_bid_component(orm.Model):
         'material_sell': fields.function(
             _get_totals, type='float', string='Material sell',
             multi='totals'),
-        'labor_direct_cost': fields.function(
-            _get_totals, type='float', string='Labor direct cost',
+        'labor_cogs': fields.function(
+            _get_totals, type='float', string='Labor COGS',
             multi='totals'),
         'labor_overhead': fields.function(
             _get_totals, type='float', string='Labor overhead',
@@ -485,8 +487,11 @@ class project_bid_component(orm.Model):
         'labor_sell': fields.function(
             _get_totals, type='float', string='Labor profit',
             multi='totals'),
-        'total_direct_cost': fields.function(
-            _get_totals, type='float', string='Total direct cost',
+        'total_cogs': fields.function(
+            _get_totals, type='float', string='Total COGS',
+            multi='totals'),
+        'gross_profit': fields.function(
+            _get_totals, type='float', string='Gross profit',
             multi='totals'),
         'total_overhead': fields.function(
             _get_totals, type='float', string='Total overhead',
@@ -495,10 +500,10 @@ class project_bid_component(orm.Model):
             _get_totals, type='float', string='Total cost',
             multi='totals'),
         'total_profit': fields.function(
-            _get_totals, type='float', string='Total profit',
+            _get_totals, type='float', string='Net profit',
             multi='totals'),
         'total_sell': fields.function(
-            _get_totals, type='float', string='Total sell',
+            _get_totals, type='float', string='Revenue',
             multi='totals'),
     }
 
@@ -521,13 +526,13 @@ class project_bid_component(orm.Model):
     def _get_default_profit_rate(self, cr, uid, context=None):
         if context is None:
             context = {}
-        profit = 0.0
+        profit_rate = 0.0
         bid_template_obj = self.pool.get('project.bid.template')
         if 'bid_template_id' in context and context['bid_template_id']:
             bid_template = bid_template_obj.browse(
                 cr, uid, context['bid_template_id'], context=context)
-            profit = bid_template.profit_rate
-        return profit
+            profit_rate = bid_template.profit_rate
+        return profit_rate
 
     def _get_default_overhead_rate(self, cr, uid, context=None):
         if context is None:
@@ -576,18 +581,19 @@ class project_bid_component_labor(orm.Model):
     def _get_totals(self, cr, uid, ids, name, args, context=None):
         res = dict.fromkeys(ids, False)
         for record in self.browse(cr, uid, ids, context=context):
-            total_direct_cost = record.quantity * record.unit_cost
+            total_cogs = record.quantity * record.unit_cost
             total_overhead = \
-                record.bid_component_id.overhead_rate/100*total_direct_cost
-            total_cost = total_direct_cost + total_overhead
-            total_profit = record.bid_component_id.profit_rate/100*total_cost
-            total_sell = total_cost+total_profit
+                record.bid_component_id.overhead_rate/100*total_cogs
+            total_cost = total_cogs + total_overhead
+            total_gross_profit = \
+                record.bid_component_id.profit_rate/100*total_cogs
+            total_sell = total_cost + total_gross_profit
 
             res[record.id] = {
-                'direct_cost': total_direct_cost,
+                'cogs': total_cogs,
                 'overhead': total_overhead,
                 'cost': total_cost,
-                'profit': total_profit,
+                'profit': total_gross_profit,
                 'sell': total_sell,
             }
 
@@ -612,17 +618,16 @@ class project_bid_component_labor(orm.Model):
         'unit_cost': fields.related('product_id', 'standard_price',
                                     string='Unit cost', type='float',
                                     store=False, readonly=True),
-        'direct_cost': fields.function(_get_totals, type='float',
-                                       multi='totals',
-                                       string='Total labor cost'),
+        'cogs': fields.function(_get_totals, type='float', multi='totals',
+                                string='Total labor COGS'),
         'overhead': fields.function(_get_totals, type='float',
                                     multi='totals', string='Total overhead'),
         'cost': fields.function(_get_totals, type='float',
                                 multi='totals', string='Total costs'),
         'profit': fields.function(_get_totals, type='float',
-                                  multi='totals', string='Total profit'),
+                                  multi='totals', string='Net profit'),
         'sell': fields.function(_get_totals, type='float',
-                                multi='totals', string='Total sell'),
+                                multi='totals', string='Revenue'),
     }
 
 
@@ -633,18 +638,20 @@ class project_bid_other_labor(orm.Model):
     def _get_totals(self, cr, uid, ids, name, args, context=None):
         res = dict.fromkeys(ids, False)
         for record in self.browse(cr, uid, ids, context=context):
-            direct_cost = record.quantity * record.unit_cost
-            overhead = direct_cost*record.overhead_rate/100
-            cost = direct_cost+overhead
-            profit = cost*record.profit_rate/100
+            cogs = record.quantity * record.unit_cost
+            overhead = cogs*record.overhead_rate/100
+            cost = cogs+overhead
+            profit = cogs*record.profit_rate/100
             sell = cost + profit
+            gross_profit = sell - cogs
 
             res[record.id] = {
-                'direct_cost': direct_cost,
+                'cogs': cogs,
                 'overhead': overhead,
                 'cost': cost,
                 'profit': profit,
                 'sell': sell,
+                'gross_profit': gross_profit,
             }
         return res
 
@@ -673,33 +680,35 @@ class project_bid_other_labor(orm.Model):
         'overhead_rate': fields.float(
             'Overhead %', ditits_compute=dp.get_precision('Account')),
         'profit_rate': fields.float(
-            'Profit %', ditits_compute=dp.get_precision('Account')),
-        'direct_cost': fields.function(_get_totals, type='float',
-                                       multi='totals',
-                                       string='Total direct cost'),
+            'Profit (%) over COGS', ditits_compute=dp.get_precision('Account'),
+            help="Profit (%) over COGS"),
+        'cogs': fields.function(_get_totals, type='float', multi='totals',
+                                string='Total COGS'),
         'overhead': fields.function(_get_totals, type='float',
                                     multi='totals',
                                     string='Total overhead'),
         'cost': fields.function(_get_totals, type='float',
                                 multi='totals', string='Total cost'),
-
+        'gross_profit': fields.function(_get_totals, type='float',
+                                        multi='totals',
+                                        string='Gross profit'),
         'profit': fields.function(_get_totals, type='float',
                                   multi='totals',
-                                  string='Total profit'),
+                                  string='Net profit'),
         'sell': fields.function(_get_totals, type='float',
-                                multi='totals', string='Total sell'),
+                                multi='totals', string='Revenue'),
     }
 
     def _get_default_profit_rate(self, cr, uid, context=None):
         if context is None:
             context = {}
-        profit = 0.0
+        profit_rate = 0.0
         bid_template_obj = self.pool.get('project.bid.template')
         if 'bid_template_id' in context and context['bid_template_id']:
             bid_template = bid_template_obj.browse(
                 cr, uid, context['bid_template_id'], context=context)
-            profit = bid_template.profit_rate
-        return profit
+            profit_rate = bid_template.profit_rate
+        return profit_rate
 
     def _get_default_overhead_rate(self, cr, uid, context=None):
         if context is None:
@@ -729,17 +738,19 @@ class project_bid_other_expenses(orm.Model):
     def _get_totals(self, cr, uid, ids, name, args, context=None):
         res = dict.fromkeys(ids, False)
         for record in self.browse(cr, uid, ids, context=context):
-            direct_cost = record.quantity*record.unit_cost
-            overhead = direct_cost * record.overhead_rate/100
-            cost = direct_cost + overhead
-            profit = cost*record.profit_rate/100
+            cogs = record.quantity*record.unit_cost
+            overhead = cogs * record.overhead_rate/100
+            cost = cogs + overhead
+            profit = cogs*record.profit_rate/100
             sell = cost + profit
+            gross_profit = sell - cogs
             res[record.id] = {
-                'direct_cost': direct_cost,
+                'cogs': cogs,
                 'overhead': overhead,
                 'cost': cost,
                 'profit': profit,
                 'sell': sell,
+                'gross_profit': gross_profit,
             }
         return res
 
@@ -763,35 +774,40 @@ class project_bid_other_expenses(orm.Model):
             'Overhead %', required=True,
             digits_compute=dp.get_precision('Account')),
         'profit_rate': fields.float(
-            'Profit %', required=True,
-            digits_compute=dp.get_precision('Account')),
-        'direct_cost': fields.function(
+            'Profit (%) over COGS', required=True,
+            digits_compute=dp.get_precision('Account'),
+            help="Profit % over COGS"),
+        'cogs': fields.function(
             _get_totals, type='float', multi='totals',
-            string='Total direct cost'),
+            string='Total COGS'),
         'overhead': fields.function(
             _get_totals, type='float', multi='totals',
             string='Total overhead cost'),
         'cost': fields.function(
             _get_totals, type='float', multi='totals',
             string='Total cost'),
+        'gross_profit': fields.function(_get_totals, type='float',
+                                        multi='totals',
+                                        string='Gross profit'),
         'profit': fields.function(
             _get_totals, type='float', multi='totals',
-            string='Total profit'),
+            string='Net profit'),
         'sell': fields.function(
             _get_totals, type='float', multi='totals',
-            string='Total sell'),
+            string='Revenue'),
+
     }
 
     def _get_default_profit_rate(self, cr, uid, context=None):
         if context is None:
             context = {}
-        profit = 0.0
+        profit_rate = 0.0
         bid_template_obj = self.pool.get('project.bid.template')
         if 'bid_template_id' in context and context['bid_template_id']:
             bid_template = bid_template_obj.browse(
                 cr, uid, context['bid_template_id'], context=context)
-            profit = bid_template.profit_rate
-        return profit
+            profit_rate = bid_template.profit_rate
+        return profit_rate
 
     def _get_default_overhead_rate(self, cr, uid, context=None):
         if context is None:
