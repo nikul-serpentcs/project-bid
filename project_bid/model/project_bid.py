@@ -185,7 +185,7 @@ class project_bid(orm.Model):
 
                 # Other expenses
                 for expense in bid.other_expenses:
-                    if expense.product_id.id not in expense:
+                    if expense.product_id.id not in items:
                         items[expense.product_id.id] = {
                             'name': expense.product_id.name,
                             'quantity': expense.quantity,
