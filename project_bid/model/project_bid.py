@@ -78,12 +78,72 @@ class project_bid(orm.Model):
         res = dict.fromkeys(ids, False)
         costs_line_obj = self.pool.get('project.bid.total.labor')
         for bid in self.browse(cr, uid, ids, context=context):
-            bid_ids = []
-            if bid.use_child:
-                bid_ids = self._get_child_bids(cr, uid, bid,
-                                               context=context)
-            else:
-                bid_ids = [bid.id]
+            vals = []
+            items = {}
+
+            for component in bid.components:
+                for labor in component.labor:
+                    if labor.product_id.id not in items:
+                        items[labor.product_id.id] = {
+                            'name': labor.product_id.name,
+                            'quantity': labor.quantity,
+                            'cogs': labor.cogs,
+                            'overhead': labor.overhead,
+                            'cost': labor.cost,
+                            'profit': labor.profit,
+                            'sell': labor.sell,
+                        }
+                    else:
+                        items[labor.product_id.id]['quantity'] \
+                            += labor.quantity
+                        items[labor.product_id.id]['cogs'] \
+                            += labor.cogs
+                        items[labor.product_id.id]['overhead'] \
+                            += labor.overhead
+                        items[labor.product_id.id]['cost'] \
+                            += labor.cost
+                        items[labor.product_id.id]['profit'] \
+                            += labor.profit
+                        items[labor.product_id.id]['sell'] \
+                            += labor.sell
+
+            for labor in bid.other_labor:
+                if labor.product_id.id not in items:
+                    items[labor.product_id.id] = {
+                        'name': labor.product_id.name,
+                        'quantity': labor.quantity,
+                        'cogs': labor.cogs,
+                        'overhead': labor.overhead,
+                        'cost': labor.cost,
+                        'profit': labor.profit,
+                        'sell': labor.sell,
+                    }
+                else:
+                    items[labor.product_id.id]['quantity'] \
+                        += labor.quantity
+                    items[labor.product_id.id]['cogs'] \
+                        += labor.cogs
+                    items[labor.product_id.id]['overhead'] \
+                        += labor.overhead
+                    items[labor.product_id.id]['cost'] \
+                        += labor.cost
+                    items[labor.product_id.id]['profit'] \
+                        += labor.profit
+                    items[labor.product_id.id]['sell'] \
+                        += labor.sell
+            for val in items.values():
+                val['bid_id'] = bid.id
+                line_id = costs_line_obj.create(cr, uid, val,
+                                                context=context)
+                vals.append(line_id)
+            res[bid.id] = vals
+        return res
+
+    def _get_wbs_totals_labor(self, cr, uid, ids, name, args, context=None):
+        res = dict.fromkeys(ids, False)
+        costs_line_obj = self.pool.get('project.bid.total.labor')
+        for bid in self.browse(cr, uid, ids, context=context):
+            bid_ids = self._get_child_bids(cr, uid, bid, context=context)
             vals = []
             items = {}
             for bid_2 in self.browse(cr, uid, bid_ids, context=context):
@@ -149,12 +209,96 @@ class project_bid(orm.Model):
         res = dict.fromkeys(ids, False)
         costs_line_obj = self.pool.get('project.bid.totals')
         for bid in self.browse(cr, uid, ids, context=context):
-            bid_ids = []
-            if bid.use_child:
-                bid_ids = self._get_child_bids(cr, uid, bid,
-                                               context=context)
-            else:
-                bid_ids = [bid.id]
+            vals = []
+            items = {}
+            material_cogs = 0.0
+            material_overhead = 0.0
+            material_cost = 0.0
+            material_profit = 0.0
+            material_sell = 0.0
+            # Total labor
+            labor_cogs = 0.0
+            labor_overhead = 0.0
+            labor_cost = 0.0
+            labor_profit = 0.0
+            labor_sell = 0.0
+
+            for component in bid.components:
+                material_cogs += component.material_cogs
+                material_overhead += component.material_overhead
+                material_cost += component.material_cost
+                material_profit += component.material_profit
+                material_sell += component.material_sell
+
+            for labor in bid.totals_non_material:
+                labor_cogs += labor.cogs
+                labor_overhead += labor.overhead
+                labor_cost += labor.cost
+                labor_profit += labor.profit
+                labor_sell += labor.sell
+
+            # Other expenses
+            for expense in bid.other_expenses:
+                if expense.product_id.id not in items:
+                    items[expense.product_id.id] = {
+                        'name': expense.product_id.name,
+                        'quantity': expense.quantity,
+                        'cogs': expense.cogs,
+                        'overhead': expense.overhead,
+                        'cost': expense.cost,
+                        'profit': expense.profit,
+                        'sell': expense.sell
+                    }
+                else:
+                    items[expense.product_id.id]['quantity'] \
+                        += expense.quantity
+                    items[expense.product_id.id]['cogs'] \
+                        += expense.cogs
+                    items[expense.product_id.id]['overhead'] \
+                        += expense.overhead
+                    items[expense.product_id.id]['cost'] \
+                        += expense.cost
+                    items[expense.product_id.id]['profit'] \
+                        += expense.profit
+                    items[expense.product_id.id]['sell'] \
+                        += expense.sell
+
+            val = {
+                'bid_id': bid.id,
+                'name': 'Total material',
+                'cogs': material_cogs,
+                'overhead': material_overhead,
+                'cost': material_cost,
+                'profit': material_profit,
+                'sell': material_sell,
+            }
+            line_id = costs_line_obj.create(cr, uid, val, context=context)
+            vals.append(line_id)
+
+            val = {
+                'bid_id': bid.id,
+                'name': 'Total labor',
+                'cogs': labor_cogs,
+                'overhead': labor_overhead,
+                'cost': labor_cost,
+                'profit': labor_profit,
+                'sell': labor_sell,
+                }
+            line_id = costs_line_obj.create(cr, uid, val, context=context)
+            vals.append(line_id)
+
+            for val in items.values():
+                val['bid_id'] = bid.id
+                line_id = costs_line_obj.create(cr, uid, val, context=context)
+                vals.append(line_id)
+            res[bid.id] = vals
+        return res
+
+    def _get_wbs_totals_all(self, cr, uid, ids, name, args, context=None):
+        res = dict.fromkeys(ids, False)
+        costs_line_obj = self.pool.get('project.bid.totals')
+        for bid in self.browse(cr, uid, ids, context=context):
+            bid_ids = self._get_child_bids(cr, uid, bid, context=context)
             vals = []
             items = {}
             material_cogs = 0.0
@@ -176,7 +320,7 @@ class project_bid(orm.Model):
                     material_profit += component.material_profit
                     material_sell += component.material_sell
 
-                for labor in bid.totals_non_material:
+                for labor in bid_2.totals_non_material:
                     labor_cogs += labor.cogs
                     labor_overhead += labor.overhead
                     labor_cost += labor.cost
@@ -184,7 +328,7 @@ class project_bid(orm.Model):
                     labor_sell += labor.sell
 
                 # Other expenses
-                for expense in bid.other_expenses:
+                for expense in bid_2.other_expenses:
                     if expense.product_id.id not in items:
                         items[expense.product_id.id] = {
                             'name': expense.product_id.name,
@@ -243,11 +387,48 @@ class project_bid(orm.Model):
     def _get_totals(self, cr, uid, ids, name, args, context=None):
         res = dict.fromkeys(ids, False)
         for bid in self.browse(cr, uid, ids, context=context):
-            if bid.use_child:
-                bid_ids = self._get_child_bids(cr, uid, bid,
-                                               context=context)
-            else:
-                bid_ids = [bid.id]
+            total_cogs = 0.0
+            total_overhead = 0.0
+            total_cost = 0.0
+            total_profit = 0.0
+            total_sell = 0.0
+            for total in bid.totals_all:
+                total_cogs += total.cogs
+                total_overhead += total.overhead
+                total_cost += total.cost
+                total_profit += total.profit
+                total_sell += total.sell
+
+            # Gross profit and gross margin
+            total_gp = total_sell - total_cogs
+            try:
+                total_gm_percent = round((total_gp/total_sell)*100, 2)
+            except ZeroDivisionError:
+                total_gm_percent = 0.0
+
+            # Profit Margin
+            total_npm = total_sell - total_cost
+            try:
+                total_npm_percent = round((total_npm/total_sell)*100, 2)
+            except ZeroDivisionError:
+                total_npm_percent = 0.0
+
+            res[bid.id] = {
+                'total_income': total_sell,
+                'total_cogs': total_cogs,
+                'total_gm_percent': total_gm_percent,
+                'total_gp': total_gp,
+                'total_overhead': total_overhead,
+                'total_npm': total_npm,
+                'total_npm_percent': total_npm_percent,
+            }
+        return res
+
+    def _get_wbs_totals(self, cr, uid, ids, name, args, context=None):
+        res = dict.fromkeys(ids, False)
+        for bid in self.browse(cr, uid, ids, context=context):
+            bid_ids = self._get_child_bids(cr, uid, bid,
+                                           context=context)
             total_cogs = 0.0
             total_overhead = 0.0
             total_cost = 0.0
@@ -276,13 +457,13 @@ class project_bid(orm.Model):
                 total_npm_percent = 0.0
 
             res[bid.id] = {
-                'total_income': total_sell,
-                'total_cogs': total_cogs,
-                'total_gm_percent': total_gm_percent,
-                'total_gp': total_gp,
-                'total_overhead': total_overhead,
-                'total_npm': total_npm,
-                'total_npm_percent': total_npm_percent,
+                'wbs_total_income': total_sell,
+                'wbs_total_cogs': total_cogs,
+                'wbs_total_gm_percent': total_gm_percent,
+                'wbs_total_gp': total_gp,
+                'wbs_total_overhead': total_overhead,
+                'wbs_total_npm': total_npm,
+                'wbs_total_npm_percent': total_npm_percent,
             }
         return res
 
@@ -368,6 +549,12 @@ class project_bid(orm.Model):
         'totals_all': fields.function(
             _get_totals_all, type='one2many',
             obj='project.bid.totals', string='Totals'),
+        'wbs_totals_non_material': fields.function(
+            _get_wbs_totals_labor, type='one2many',
+            obj='project.bid.total.labor', string='WBS Non material costs'),
+        'wbs_totals_all': fields.function(
+            _get_wbs_totals_all, type='one2many',
+            obj='project.bid.totals', string='WBS Totals'),
         'other_labor': fields.one2many('project.bid.other.labor', 'bid_id',
                                        'Other labor', readonly=True,
                                        states={'draft': [('readonly',
@@ -377,7 +564,6 @@ class project_bid(orm.Model):
                                           'Other expenses', readonly=True,
                                           states={'draft': [('readonly',
                                                              False)]}),
-        'use_child': fields.boolean('Compute totals using child bids'),
         'total_income': fields.function(_get_totals, type='float',
                                         multi='totals', string='Revenue'),
         'total_cogs': fields.function(_get_totals, type='float',
@@ -396,6 +582,27 @@ class project_bid(orm.Model):
         'total_npm_percent': fields.function(_get_totals, type='float',
                                              multi='totals',
                                              string='Net Profit Margin (%)'),
+        'wbs_total_income': fields.function(_get_wbs_totals, type='float',
+                                            multi='wbs_totals',
+                                            string='WBS Total Revenue'),
+        'wbs_total_cogs': fields.function(_get_totals, type='float',
+                                          multi='wbs_totals',
+                                          string='WBS Cost of Sales'),
+        'wbs_total_gm_percent': fields.function(_get_wbs_totals, type='float',
+                                                multi='wbs_totals',
+                                                string='WBS Gross Margin (%)'),
+        'wbs_total_gp': fields.function(_get_wbs_totals, type='float',
+                                        multi='wbs_totals',
+                                        string='WBS Gross Profit'),
+        'wbs_total_overhead': fields.function(_get_wbs_totals, type='float',
+                                              multi='wbs_totals',
+                                              string='WBS Total Overhead'),
+        'wbs_total_npm': fields.function(_get_wbs_totals, type='float',
+                                         multi='wbs_totals',
+                                         string='WBS Net Profit Margin'),
+        'wbs_total_npm_percent': fields.function(
+            _get_wbs_totals, type='float', multi='wbs_totals',
+            string='WBS Net Profit Margin %)'),
 
     }
 

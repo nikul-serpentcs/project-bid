@@ -172,7 +172,6 @@
                             <field name="project_id"/>
                             <field name="partner_id"/>
                             <field name="user_id"/>
-                            <field name="use_child"/>
                         </group>
                         <newline/>
                         <group>
@@ -212,6 +211,30 @@
                             <field name="other_expenses"
                                    context="{'bid_template_id': bid_template_id}"/>
                         </page>
+                        <page string="WBS Totals"
+                              name="wbs_totals">
+                            <group>
+                                <label string="Labor:"/>
+                                <newline/>
+                                <field name="wbs_totals_non_material"
+                                       nolabel="1"/>
+                            </group>
+                            <newline/>
+                            <group>
+                                <label string="Totals:" />
+                                <newline/>
+                                <field name="wbs_totals_all" nolabel="1"/>
+                            </group>
+                            <group>
+                                <field name="wbs_total_income"/>
+                                <field name="wbs_total_cogs"/>
+                                <field name="wbs_total_gp"/>
+                                <field name="wbs_total_gm_percent"/>
+                                <field name="wbs_total_overhead"/>
+                                <field name="wbs_total_npm"/>
+                                <field name="wbs_total_npm_percent"/>
+                            </group>
+                        </page>
                         <page string="Notes" name="notes">
                             <group>
                                 <field name="notes"/>
@@ -242,14 +265,13 @@
                     <field name="project_id"/>
                     <field name="partner_id"/>
                     <field name="user_id"/>
-                    <field name="use_child" string="Totalized"/>
-                    <field name="total_income"/>
-                    <field name="total_cogs"/>
-                    <field name="total_gp"/>
-                    <field name="total_gm_percent"/>
-                    <field name="total_overhead"/>
-                    <field name="total_npm"/>
-                    <field name="total_npm_percent"/>
+                    <field name="wbs_total_income"/>
+                    <field name="wbs_total_cogs"/>
+                    <field name="wbs_total_gp"/>
+                    <field name="wbs_total_gm_percent"/>
+                    <field name="wbs_total_overhead"/>
+                    <field name="wbs_total_npm"/>
+                    <field name="wbs_total_npm_percent"/>
                     <field name="created_on"/>
                     <field name="created_by"/>
                     <field name="due_by"/>
