@@ -11,7 +11,6 @@
                     <field name="quantity" sum="Total Quantity"/>
                     <field name="cogs" sum="COGS"/>
                     <field name="overhead" sum="Overhead Cost"/>
-                    <field name="cost" sum="Total Cost"/>
                     <field name="profit" sum="Total Profit"/>
                     <field name="sell" sum="Total Sell"/>
                 </tree>
@@ -26,7 +25,6 @@
                     <field name="name"/>
                     <field name="cogs" sum="COGS"/>
                     <field name="overhead" sum="Overhead Cost"/>
-                    <field name="cost" sum="Total Cost"/>
                     <field name="profit" sum="Total Profit"/>
                     <field name="sell" sum="Total Sell"/>
                 </tree>
@@ -45,7 +43,6 @@
                     <field name="unit_cost"/>
                     <field name="cogs" sum="COGS"/>
                     <field name="overhead" sum="Overhead Cost"/>
-                    <field name="cost" sum="Total Cost"/>
                     <field name="profit" sum="Total Profit"/>
                     <field name="sell" sum="Total Sell"/>
                 </tree>
@@ -65,7 +62,6 @@
                     <field name="labor_cogs" sum="Labor Cost"/>
                     <field name="total_cogs" sum="COGS"/>
                     <field name="total_overhead" sum="Overhead Cost"/>
-                    <field name="total_cost" sum="Total Cost"/>
                     <field name="total_profit" sum="Net Profit"/>
                     <field name="total_sell" sum="Total Sell"/>
                     <field name="gross_profit" sum="Gross Profit"/>
@@ -112,7 +108,6 @@
                     <field name="profit_rate"/>
                     <field name="cogs" sum="COGS"/>
                     <field name="overhead" sum="Overhead Cost"/>
-                    <field name="cost" sum="Total Cost"/>
                     <field name="profit" sum="Total Net Profit"/>
                     <field name="sell" sum="Total Sell"/>
                     <field name="gross_profit" sum="Total Gross Profit"/>
@@ -133,7 +128,6 @@
                     <field name="profit_rate"/>
                     <field name="cogs" sum="COGS"/>
                     <field name="overhead" sum="Overhead Cost"/>
-                    <field name="cost" sum="Total Cost"/>
                     <field name="profit" sum="Total Profit"/>
                     <field name="sell" sum="Total Sell"/>
                     <field name="gross_profit" sum="Total Gross Profit"/>
