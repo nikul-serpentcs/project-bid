@@ -184,8 +184,12 @@ class project_bid(orm.Model):
         res = {}
         if context is None:
             context = {}
-
+        self._delete_analytic_lines(cr, uid, ids, context=context)
         for bid in self.browse(cr, uid, ids, context=context):
+            if not bid.project_id:
+                raise orm.except_orm(_('Error !'),
+                                     _('The bids must have a project '
+                                       'assigned'))
             line_ids = []
             for component in bid.components:
                 line_ids.extend(self.create_cost_plan_lines(

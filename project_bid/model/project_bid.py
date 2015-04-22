@@ -650,7 +650,7 @@ class project_bid(orm.Model):
         'created_by': lambda obj, cr, uid, ctx=None: uid,
     }
 
-    _order = 'parent_id'
+    _order = 'complete_code'
 
     def copy(self, cr, uid, id, default=None, context=None):
         if default is None:
