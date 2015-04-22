@@ -61,19 +61,33 @@ class project_bid(orm.Model):
     _name = 'project.bid'
     _description = "Project Bid"
 
-    def _get_child_bids(self, cr, uid, bid, context=None):
-        project_obj = self.pool.get('project.project')
-        res = []
-        project_ids = project_obj._get_project_wbs(
-            cr, uid, [bid.project_id.id], context=context)
-        cr.execute('''SELECT id
+    def _get_child_bids(self, cr, uid, ids, context=None):
+        result = {}
+        if not ids:
+            return result
+        for curr_id in ids:
+            result[curr_id] = True
+        # Now add the children
+        cr.execute('''
+        WITH RECURSIVE children AS (
+        SELECT parent_id, id
         FROM project_bid
-        WHERE project_id IN %s
-        AND state <> %s''', (tuple(project_ids), 'cancel'))
-        results = cr.fetchall()
-        for result in results:
-            res.append(result[0])
-        return res
+        WHERE parent_id IN %s
+        UNION ALL
+        SELECT a.parent_id, a.id
+        FROM project_bid a
+        JOIN children b ON(a.parent_id = b.id)
+        )
+        SELECT * FROM children order by parent_id
+        ''', (tuple(ids),))
+        res = cr.fetchall()
+        for x, y in res:
+            result[y] = True
+        return result
+
+    def get_child_bids(self, cr, uid, ids, context=None):
+        res = self._get_child_bids(cr, uid, ids, context=None)
+        return res.keys()
 
     def _get_totals_labor(self, cr, uid, ids, name, args, context=None):
         res = dict.fromkeys(ids, False)
@@ -81,7 +95,6 @@ class project_bid(orm.Model):
         for bid in self.browse(cr, uid, ids, context=context):
             vals = []
             items = {}
-
             for component in bid.components:
                 for labor in component.labor:
                     if labor.product_id.id not in items:
@@ -144,7 +157,7 @@ class project_bid(orm.Model):
         res = dict.fromkeys(ids, False)
         costs_line_obj = self.pool.get('project.bid.total.labor')
         for bid in self.browse(cr, uid, ids, context=context):
-            bid_ids = self._get_child_bids(cr, uid, bid, context=context)
+            bid_ids = self.get_child_bids(cr, uid, [bid.id], context=context)
             vals = []
             items = {}
             for bid_2 in self.browse(cr, uid, bid_ids, context=context):
@@ -299,7 +312,7 @@ class project_bid(orm.Model):
         res = dict.fromkeys(ids, False)
         costs_line_obj = self.pool.get('project.bid.totals')
         for bid in self.browse(cr, uid, ids, context=context):
-            bid_ids = self._get_child_bids(cr, uid, bid, context=context)
+            bid_ids = self.get_child_bids(cr, uid, [bid.id], context=context)
             vals = []
             items = {}
             material_cogs = 0.0
@@ -428,8 +441,7 @@ class project_bid(orm.Model):
     def _get_wbs_totals(self, cr, uid, ids, name, args, context=None):
         res = dict.fromkeys(ids, False)
         for bid in self.browse(cr, uid, ids, context=context):
-            bid_ids = self._get_child_bids(cr, uid, bid,
-                                           context=context)
+            bid_ids = self.get_child_bids(cr, uid, [bid.id], context=context)
             total_cogs = 0.0
             total_overhead = 0.0
             total_cost = 0.0
@@ -481,6 +493,27 @@ class project_bid(orm.Model):
                     res[bid.id] = 0.0
         return res
 
+    def _complete_bid_hierarchy_code_calc(
+            self, cr, uid, ids, prop, unknow_none, unknow_dict):
+        if not ids:
+            return []
+        res = []
+        for bid in self.browse(cr, uid, ids, context=None):
+            data = []
+            b = bid
+            while b:
+                if b.code:
+                    data.insert(0, b.code)
+                else:
+                    data.insert(0, '')
+
+                b = b.parent_id
+            data = ' / '.join(data)
+            data = '[' + data + '] '
+
+            res.append((bid.id, data))
+        return dict(res)
+
     _columns = {
         'state': fields.selection(
             [('draft', 'Draft'),
@@ -503,23 +536,27 @@ class project_bid(orm.Model):
                                            states={
                                                'draft': [('readonly', False)]
                                            }),
-        'project_id': fields.many2one('project.project',
-                                      'Project', required=True,
-                                      ondelete='cascade', select=True,
-                                      readonly=True,
+        'parent_id': fields.many2one('project.bid', 'Parent Bid',
+                                     required=False, ondelete='set null',
+                                     readonly=True,
+                                     states={
+                                         'draft': [('readonly', False)]
+                                     }),
+        'partner_id': fields.many2one('res.partner',
+                                      'Customer', required=True, readonly=True,
                                       states={
                                           'draft': [('readonly', False)]
                                       }),
-        'partner_id': fields.related('project_id', 'partner_id',
-                                     type='many2one',
-                                     relation='res.partner',
-                                     string='Customer',
-                                     store=True, readonly=True),
-        'user_id': fields.related('project_id', 'user_id', type='many2one',
-                                  relation='res.users',
-                                  string='Project Manager',
-                                  store=True,
-                                  readonly=True),
+        'code': fields.char('Reference', select=True, required=True),
+        'complete_code': fields.function(
+            _complete_bid_hierarchy_code_calc, method=True, type='char',
+            string='Complete Reference',
+            help='Describes the full path of this '
+                 'bid hierarchy.',
+            store={
+                'project.bid': (_get_child_bids, ['name', 'code',
+                                                  'parent_id'], 20),
+            }),
         'name': fields.char('Name', size=256, required=True,
                             readonly=True,
                             states={'draft': [('readonly', False)]}),
@@ -613,7 +650,7 @@ class project_bid(orm.Model):
         'created_by': lambda obj, cr, uid, ctx=None: uid,
     }
 
-    _order = 'project_id'
+    _order = 'parent_id'
 
     def copy(self, cr, uid, id, default=None, context=None):
         if default is None:
@@ -657,6 +694,53 @@ class project_bid(orm.Model):
             context = {}
         self.write(cr, uid, ids, {'state': 'cancel'}, context=context)
         return True
+
+    def code_get(self, cr, uid, ids, context=None):
+        if not ids:
+            return []
+        res = []
+        for item in self.browse(cr, uid, ids, context=context):
+            data = []
+            bid = item
+            while bid:
+                if bid.code:
+                    data.insert(0, bid.code)
+                else:
+                    data.insert(0, '')
+                bid = bid.parent_id
+            data = ' / '.join(data)
+            res.append((item.id, data))
+        return res
+
+    def name_get(self, cr, uid, ids, context=None):
+
+        if not ids:
+            return []
+        if type(ids) is int:
+            ids = [ids]
+        new_list = []
+        for i in ids:
+            if i not in new_list:
+                new_list.append(i)
+        ids = new_list
+
+        res = []
+        for item in self.browse(cr, uid, ids, context=context):
+            data = []
+            bid = item
+            while bid:
+                if bid.name:
+                    data.insert(0, bid.name)
+                else:
+                    data.insert(0, '')
+                bid = bid.parent_id
+            data = ' / '.join(data)
+            res2 = self.code_get(cr, uid, [item.id], context=None)
+            if res2:
+                data = '[' + res2[0][1] + '] ' + data
+
+            res.append((item.id, data))
+        return res
 
 
 class project_bid_component(orm.Model):

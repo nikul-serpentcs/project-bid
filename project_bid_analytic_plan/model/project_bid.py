@@ -29,6 +29,10 @@ class project_bid(orm.Model):
     _inherit = 'project.bid'
 
     _columns = {
+        'project_id': fields.many2one(
+            'project.project', 'Project', required=False,
+            ondelete='set null', select=True,
+            readonly=True, states={'draft': [('readonly', False)]}),
         'plan_lines': fields.many2many(
             'account.analytic.line.plan',
             string='Analytic Plan Lines',
@@ -176,9 +180,10 @@ class project_bid(orm.Model):
             res.append(line_id)
         return res
 
-    def action_button_confirm(self, cr, uid, ids, form, context=None):
-        res = super(project_bid, self).action_button_confirm(
-            cr, uid, ids, form, context=context)
+    def action_button_transfer_to_project(self, cr, uid, ids, form, context=None):
+        res = {}
+        if context is None:
+            context = {}
 
         for bid in self.browse(cr, uid, ids, context=context):
             line_ids = []
@@ -198,7 +203,6 @@ class project_bid(orm.Model):
                 cr, uid, bid, context=context))
             self.write(cr, uid, bid.id, {'plan_lines': [(6, 0, line_ids)]},
                        context=context)
-
         return res
 
     def _delete_analytic_lines(self, cr, uid, ids, context=None):

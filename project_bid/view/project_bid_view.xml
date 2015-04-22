@@ -161,11 +161,11 @@
                     </header>
                     <group>
                         <group>
+                            <field name="code"/>
                             <field name="name" placeholder="Bid summary..."/>
-                            <field name="bid_template_id"/>
-                            <field name="project_id"/>
                             <field name="partner_id"/>
-                            <field name="user_id"/>
+                            <field name="parent_id"/>
+                            <field name="bid_template_id"/>
                         </group>
                         <newline/>
                         <group>
@@ -255,17 +255,19 @@
             <field name="arch" type="xml">
 				<tree string="Bid"
                       colors="red:due_by and (due_by &lt; current_date) and state=='draft';black:state in ('draft','approve');blue:state=='confirm';grey:state=='cancel'">
+                    <field name="complete_code"/>
                     <field name="name"/>
-                    <field name="project_id"/>
                     <field name="partner_id"/>
-                    <field name="user_id"/>
-                    <field name="wbs_total_income"/>
-                    <field name="wbs_total_cogs"/>
-                    <field name="wbs_total_gp"/>
-                    <field name="wbs_total_gm_percent"/>
-                    <field name="wbs_total_overhead"/>
-                    <field name="wbs_total_npm"/>
-                    <field name="wbs_total_npm_percent"/>
+                    <field name="parent_id"/>
+                    <field name="wbs_total_income" string="Revenue"/>
+                    <field name="wbs_total_cogs" string="Cost of Sales"/>
+                    <field name="wbs_total_gp" string="Gross Profit"/>
+                    <field name="wbs_total_gm_percent"
+                           string="Gross Margin %%"/>
+                    <field name="wbs_total_overhead" string="Total Overhead"/>
+                    <field name="wbs_total_npm" string="Net Profit Margin"/>
+                    <field name="wbs_total_npm_percent"
+                           string="Net Profit Margin %%"/>
                     <field name="created_on"/>
                     <field name="created_by"/>
                     <field name="due_by"/>
@@ -280,9 +282,8 @@
             <field name="arch" type="xml">
                 <search string="Search bids">
                     <group col='6' colspan='5'>
-                        <field name="project_id"/>
                         <field name="partner_id"/>
-                        <field name="user_id"/>
+                        <field name="code"/>
                         <field name="name"/>
                         <field name="created_on"/>
                     </group>
