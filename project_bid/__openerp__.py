@@ -37,6 +37,7 @@ Project Bid
         "view/project_bid_template_view.xml",
         "view/project_bid_view.xml",
         "security/ir.model.access.csv",
+        "data/project_bid_data.xml",
     ],
     'demo_xml': [
 

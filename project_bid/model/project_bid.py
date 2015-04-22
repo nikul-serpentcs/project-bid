@@ -60,6 +60,7 @@ class project_bid_totals(orm.TransientModel):
 class project_bid(orm.Model):
     _name = 'project.bid'
     _description = "Project Bid"
+    _inherit = ['mail.thread', 'ir.needaction_mixin']
 
     def _get_child_bids(self, cr, uid, ids, context=None):
         result = {}
@@ -513,6 +514,19 @@ class project_bid(orm.Model):
 
             res.append((bid.id, data))
         return dict(res)
+
+    _track = {
+        'state': {
+            'project_bid.mt_bid_confirmed':
+                lambda self, cr, uid, obj, ctx=None: obj['state'] == 'confirm',
+            'project_bid.mt_bid_approved':
+                lambda self, cr, uid, obj, ctx=None: obj['state'] == 'approve',
+            'project_bid.mt_bid_draft':
+                lambda self, cr, uid, obj, ctx=None: obj['state'] == 'draft',
+            'project_bid.mt_bid_cancel':
+                lambda self, cr, uid, obj, ctx=None: obj['state'] == 'cancel',
+        },
+    }
 
     _columns = {
         'state': fields.selection(
