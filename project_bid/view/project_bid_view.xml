@@ -84,11 +84,9 @@
                         <field name="unit_cost"/>
                         <field name="overhead_rate"/>
                         <field name="profit_rate"/>
-                        <field name="bid_template_id" invisible="1"/>
                     </group>
                     <group>
-                        <field name="labor"
-                               context="{'bid_template_id': bid_template_id}"/>
+                        <field name="labor"/>
                     </group>
                 </form>
             </field>
@@ -169,7 +167,8 @@
                                        context="{'search_default_customer':1, 'show_address': 1}"
                                        options='{"always_reload": True}'/>
                                 <field name="parent_id"/>
-                                <field name="bid_template_id"/>
+                                <field name="bid_template_id"
+                                       on_change="on_change_bid_template_id(bid_template_id)"/>/>
                             </group>
                             <group>
                                 <field name="total_income"/>
@@ -198,17 +197,17 @@
                             <page string="Components"
                                   name="components">
                                 <field name="components"
-                                       context="{'bid_template_id': bid_template_id}"/>
+                                       context="{'overhead_rate': overhead_rate, 'profit_rate': profit_rate, 'bid_template_id': bid_template_id}"/>
                             </page>
                             <page string="Other labor"
                                   name="other_labor">
                                 <field name="other_labor"
-                                       context="{'bid_template_id': bid_template_id}"/>
+                                       context="{'overhead_rate': overhead_rate, 'profit_rate': profit_rate}"/>
                             </page>
                             <page string="Other expenses"
                                   name="other_expenses">
                                 <field name="other_expenses"
-                                       context="{'bid_template_id': bid_template_id}"/>
+                                       context="{'overhead_rate': overhead_rate, 'profit_rate': profit_rate}"/>
                             </page>
                             <page string="WBS Totals"
                                   name="wbs_totals">
@@ -240,6 +239,10 @@
                                 </group>
                             </page>
                             <page string="Administration" name="admin">
+                                <group>
+                                    <field name="overhead_rate"/>
+                                    <field name="profit_rate"/>
+                                </group>
                                 <group>
                                     <field name="created_on"/>
                                     <field name="created_by"/>

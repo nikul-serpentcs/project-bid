@@ -655,16 +655,34 @@ class project_bid(orm.Model):
         'wbs_total_npm_percent': fields.function(
             _get_wbs_totals, type='float', multi='wbs_totals',
             string='WBS Net Profit Margin %)'),
-
+        'overhead_rate': fields.float(
+            'Default Overhead %', digits_compute=dp.get_precision('Account')),
+        'profit_rate': fields.float(
+            'Default Profit (%) over COGS', ditits_compute=dp.get_precision(
+                'Account'),
+            help="Profit % over COGS"),
     }
 
     _defaults = {
         'state': 'draft',
         'created_on': lambda *a: time.strftime('%Y-%m-%d'),
         'created_by': lambda obj, cr, uid, ctx=None: uid,
+
     }
 
     _order = 'complete_code'
+
+    def on_change_bid_template_id(self, cr, uid, ids, bid_template_id,
+                                  context=None):
+        values = {}
+        if bid_template_id:
+            bid_template = self.pool.get('project.bid.template').browse(
+                cr, uid, bid_template_id, context=context)
+            values = {
+                'overhead_rate': bid_template.overhead_rate,
+                'profit_rate': bid_template.profit_rate,
+            }
+        return {'value': values}
 
     def copy(self, cr, uid, id, default=None, context=None):
         if default is None:
@@ -903,24 +921,12 @@ class project_bid_component(orm.Model):
     def _get_default_profit_rate(self, cr, uid, context=None):
         if context is None:
             context = {}
-        profit_rate = 0.0
-        bid_template_obj = self.pool.get('project.bid.template')
-        if 'bid_template_id' in context and context['bid_template_id']:
-            bid_template = bid_template_obj.browse(
-                cr, uid, context['bid_template_id'], context=context)
-            profit_rate = bid_template.profit_rate
-        return profit_rate
+        return context.get('profit_rate', 0.0)
 
     def _get_default_overhead_rate(self, cr, uid, context=None):
         if context is None:
             context = {}
-        overhead = 0.0
-        bid_template_obj = self.pool.get('project.bid.template')
-        if 'bid_template_id' in context and context['bid_template_id']:
-            bid_template = bid_template_obj.browse(
-                cr, uid, context['bid_template_id'], context=context)
-            overhead = bid_template.overhead_rate
-        return overhead
+        return context.get('overhead_rate', 0.0)
 
     _defaults = {
         'labor': _get_default_labor,
@@ -1079,24 +1085,12 @@ class project_bid_other_labor(orm.Model):
     def _get_default_profit_rate(self, cr, uid, context=None):
         if context is None:
             context = {}
-        profit_rate = 0.0
-        bid_template_obj = self.pool.get('project.bid.template')
-        if 'bid_template_id' in context and context['bid_template_id']:
-            bid_template = bid_template_obj.browse(
-                cr, uid, context['bid_template_id'], context=context)
-            profit_rate = bid_template.profit_rate
-        return profit_rate
+        return context.get('profit_rate', 0.0)
 
     def _get_default_overhead_rate(self, cr, uid, context=None):
         if context is None:
             context = {}
-        overhead = 0.0
-        bid_template_obj = self.pool.get('project.bid.template')
-        if 'bid_template_id' in context and context['bid_template_id']:
-            bid_template = bid_template_obj.browse(
-                cr, uid, context['bid_template_id'], context=context)
-            overhead = bid_template.overhead_rate
-        return overhead
+        return context.get('overhead_rate', 0.0)
 
     _defaults = {
         'profit_rate': _get_default_profit_rate,
@@ -1178,24 +1172,12 @@ class project_bid_other_expenses(orm.Model):
     def _get_default_profit_rate(self, cr, uid, context=None):
         if context is None:
             context = {}
-        profit_rate = 0.0
-        bid_template_obj = self.pool.get('project.bid.template')
-        if 'bid_template_id' in context and context['bid_template_id']:
-            bid_template = bid_template_obj.browse(
-                cr, uid, context['bid_template_id'], context=context)
-            profit_rate = bid_template.profit_rate
-        return profit_rate
+        return context.get('profit_rate', 0.0)
 
     def _get_default_overhead_rate(self, cr, uid, context=None):
         if context is None:
             context = {}
-        overhead = 0.0
-        bid_template_obj = self.pool.get('project.bid.template')
-        if 'bid_template_id' in context and context['bid_template_id']:
-            bid_template = bid_template_obj.browse(
-                cr, uid, context['bid_template_id'], context=context)
-            overhead = bid_template.overhead_rate
-        return overhead
+        return context.get('overhead_rate', 0.0)
 
     _defaults = {
         'profit_rate': _get_default_profit_rate,
