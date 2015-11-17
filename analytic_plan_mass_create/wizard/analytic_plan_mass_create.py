@@ -122,6 +122,10 @@ class AnalyticPlanMassCreate(orm.TransientModel):
                                    'journals defined for this product: '
                                    '"%s" (id:%d)') % (product.name,
                                                       product.id,))
+        if type == 'expense':
+            amount_currency *= -1
+            amount *= -1
+
         data = {
             'amount_currency': amount_currency,
             'amount': amount,
@@ -205,11 +209,14 @@ class AnalyticPlanMassCreateItem(orm.TransientModel):
         'date': fields.date('Date', required=True),
         'material_cost': fields.float(
             'Planned material cost', required=True,
+            help='Planned material cost, expressed it in positive quantity.',
             digits_compute=dp.get_precision('Account')),
         'labor_cost': fields.float(
             'Planned labor cost', required=True,
+            help='Planned labor cost, expressed it in positive quantity.',
             digits_compute=dp.get_precision('Account')),
         'revenue': fields.float(
             'Planned revenue', required=True,
+            help='Planned Revenue',
             digits_compute=dp.get_precision('Account')),
     }
