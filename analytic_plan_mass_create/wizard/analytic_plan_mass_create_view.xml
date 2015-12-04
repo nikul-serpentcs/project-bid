@@ -8,7 +8,8 @@
             <field name="arch" type="xml">
                  <form string="Create Plan Lines">
                      <group>
-                        <field name="template_id"/>
+                         <field name="delete_existing"/>
+                         <field name="template_id"/>
                      </group>
                      <newline/>
                      <group>

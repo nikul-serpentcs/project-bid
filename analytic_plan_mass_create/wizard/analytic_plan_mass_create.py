@@ -29,6 +29,7 @@ class AnalyticPlanMassCreate(orm.TransientModel):
     _description = "Create multiple analytic plan lines"
 
     _columns = {
+        'delete_existing': fields.boolean('Delete existing analytic lines'),
         'item_ids': fields.one2many(
             'analytic.plan.mass.create.item',
             'wiz_id', 'Items'),
@@ -145,6 +146,17 @@ class AnalyticPlanMassCreate(orm.TransientModel):
         wizard = self.browse(cr, uid, ids[0], context=context)
         analytic_line_plan_obj = self.pool['account.analytic.line.plan']
         for item in wizard.item_ids:
+            if wizard.delete_existing:
+                line_ids = analytic_line_plan_obj.search(cr, uid,
+                                        [('account_id', '=',
+                                          item.account_id.id),
+                                         ('version_id', '=',
+                                          wizard.template_id.version_id.id)],
+                                        context=context)
+                if line_ids:
+                    analytic_line_plan_obj.unlink(cr, uid, line_ids,
+                                                  context=context)
+
             common = self._prepare_analytic_line_plan_common(
                 cr, uid, wizard, item, context=context)
 
