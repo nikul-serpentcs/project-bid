@@ -8,7 +8,6 @@
             <field name="arch" type="xml">
                  <form string="Create Plan Lines">
                      <group>
-                         <field name="delete_existing"/>
                          <field name="template_id"/>
                      </group>
                      <newline/>
@@ -16,6 +15,7 @@
                          <field name="item_ids" nolabel="1" colspan="2">
                               <tree string="Details" create="false" editable="bottom">
                                   <field name="account_id" readonly="1"/>
+                                  <field name="delete_existing"/>
                                   <field name="date"/>
                                   <field name="material_cost"/>
                                   <field name="labor_cost"/>
