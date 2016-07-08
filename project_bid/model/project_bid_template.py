@@ -19,33 +19,34 @@
 #
 ##############################################################################
 
-from openerp.osv import fields, orm
+from openerp import models, fields, api
 from openerp.tools.translate import _
 import time
 
 
-class project_bid_template(orm.Model):
+class project_bid_template(models.Model):
     _name = 'project.bid.template'
     _description = "Project Bid Template"
 
-    _columns = {
-        'name': fields.char('Description', size=256, required=True),
-        'default_component_labor': fields.many2many(
+    name = fields.Char('Description', size=256, required=True)
+    default_component_labor = fields.Many2many(
             'product.product',
+            'project_bid_product_rel',
+            'product_id',
+            'project_bid_template_id',
             string='Default component labor',
-            required=False),
-        'profit_rate': fields.float('Profit (%)', help="Profit as % of COGS"),
-        'overhead_rate': fields.float('Default overhead (%)'),
-        'labor_uom_id': fields.many2one('product.uom', 'Default labor UoM',
-                                        required=True),
-    }
+            required=False)
+    profit_rate = fields.Float('Profit (%)', help="Profit as % of COGS")
+    overhead_rate = fields.Float('Default overhead (%)')
+    labor_uom_id = fields.Many2one('product.uom', 'Default labor UoM',
+                                        required=True)
 
-    def _check_labor_uom(self, cr, uid, ids, context=None):
-        for template in self.browse(cr, uid, ids, context=context):
+    @api.multi
+    def _check_labor_uom(self):
+        for template in self:
             for labor in template.default_component_labor:
                 if labor.uom_id.id is not template.labor_uom_id.id:
                     return False
-
         return True
 
     _constraints = [(_check_labor_uom, 'Error ! The labor must be entered '
