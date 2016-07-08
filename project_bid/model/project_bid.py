@@ -664,8 +664,8 @@ class project_bid(models.Model):
     @api.onchange('bid_template_id')
     def on_change_bid_template_id(self):
         if self.bid_template_id:
-            self.bid_template_id.overhead_rate = self.bid_template_id.overhead_rate
-            self.bid_template_id.profit_rate = self.bid_template_id.profit_rate
+            self.overhead_rate = self.bid_template_id.overhead_rate
+            self.profit_rate = self.bid_template_id.profit_rate
 
     def copy(self, cr, uid, id, default=None, context=None):
         if default is None:
@@ -945,25 +945,20 @@ class project_bid_component(models.Model):
     _constraints = [(_check_overhead, 'Error ! The overhead % must be > 0. ',
                      ['overhead'])]
 
-    @api.multi
-    @api.onchange('bid_template_id')
-    def on_change_bid_template_id(self):
+    @api.onchange('bid_component_template_id')
+    def on_change_bid_component_template_id(self):
         if self.bid_component_template_id:
             bid_component_template = self.bid_component_template_id
-            on_write = False
-            if self.id:
-                bid_component = self
-                on_write = True
 
             material_list = []
             labor_list = []
-            if on_write:
-                for material in bid_component.material_ids:
+            if self.material_ids:
+                for material in self.material_ids:
                     material_list.append((2, material.id, 0))
 
             for material in bid_component_template.material_ids:
                 materialdicc = {
-                    'bid_component_id': bid_component.id if on_write else None,
+                    'bid_component_id': self.id if self.material_ids else None,
                     'name': material.name,
                     'quantity': material.quantity,
                     'product_id': material.product_id.id,
@@ -979,13 +974,13 @@ class project_bid_component(models.Model):
                 }
                 material_list.append((0, 0, materialdicc))
 
-            if on_write:
-                for labor in bid_component.labor:
+            if self.labor:
+                for labor in self.labor:
                     labor_list.append((2, labor.id, 0))
 
             for labor in bid_component_template.labor:
                 labordicc = {
-                    'bid_component_id': bid_component.id if on_write else None,
+                    'bid_component_id': self.id if self.labor else None,
                     'name': labor.name,
                     'quantity': labor.quantity,
                     'product_id': labor.product_id.id,
@@ -1000,10 +995,10 @@ class project_bid_component(models.Model):
                 }
                 labor_list.append((0, 0, labordicc))
 
-            bid_component.name = bid_component_template.name
-            bid_component.material_ids = material_list
-            bid_component.labor = labor_list
-            bid_component.bid_component_template_id = False
+            self.name = bid_component_template.name
+            self.material_ids = material_list
+            self.labor = labor_list
+            self.bid_component_template_id = False
 
 
 class project_bid_component_material(models.Model):
