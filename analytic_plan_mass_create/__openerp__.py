@@ -35,6 +35,6 @@ Analytic Plan Mass Create
         "wizard/analytic_plan_mass_create_view.xml",
         "security/ir.model.access.csv"
     ],
-    'installable': True,
+    'installable': False,
     'active': False,
 }

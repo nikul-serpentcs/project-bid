@@ -41,7 +41,7 @@ Project Bid - Analytic Plan integration
     ],
     'test':[
     ],
-    'installable': True,
+    'installable': False,
     'active': False,
     'certificate': '',
 }

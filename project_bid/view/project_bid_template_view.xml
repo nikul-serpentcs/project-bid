@@ -72,7 +72,6 @@
                 groups="project_bid.group_project_bid_user,project_bid.group_project_bid_manager"
             action="action_project_bid_template_open_form"
             id="project_bid_template_entries"
-            parent="base.menu_definitions"
-            sequence="1"/>
+            parent="project.menu_project_config"/>
 	</data>
 </openerp>
