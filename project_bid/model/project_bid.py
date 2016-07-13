@@ -932,7 +932,7 @@ class project_bid_component(models.Model):
         compute = '_get_totals', string='Net profit',
         multi='totals')
     total_sell = fields.Float(
-        copute = '_get_totals', string='Revenue',
+        compute = '_get_totals', string='Revenue',
         multi='totals')
 
     @api.multi
