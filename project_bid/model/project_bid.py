@@ -34,6 +34,7 @@ class project_bid_totals(models.TransientModel):
     profit = fields.Float('Profit')
     sell = fields.Float('Revenue')
 
+
 class project_bid(models.Model):
     _name = 'project.bid'
     _description = "Project Bid"
@@ -375,7 +376,6 @@ class project_bid(models.Model):
                     vals.append(line_id.id)
 
                 bid.wbs_totals_all = vals
-
 
     @api.multi
     def _get_totals(self):
@@ -854,7 +854,7 @@ class project_bid_component(models.Model):
                              'bid_component_id', 'Labor',
                             default=_default_labor)
     bid_component_template_id = fields.Many2one('project.bid.component',
-                                                 'Project Bid Component Template',
+                                                'Project Bid Component Template',
                                                  required=False,
                                                  ondelete='set null')
     material_ids = fields.One2many('project.bid.component.material',
@@ -870,53 +870,37 @@ class project_bid_component(models.Model):
         help="Profit % over COGS",
         default = _default_profit_rate)
     material_cogs = fields.Float(
-        compute=_get_totals, string='Material COGS',
-        multi='totals')
+        compute=_get_totals, string='Material COGS')
     material_overhead = fields.Float(
-        compute='_get_totals',string='Material overhead',
-        multi='totals')
+        compute='_get_totals', string='Material overhead')
     material_cost = fields.Float(
-        compute='_get_totals', string='Material cost',
-        multi='totals')
+        compute='_get_totals', string='Material cost')
     material_profit = fields.Float(
-        compute='_get_totals', string='Material profit',
-        multi='totals')
+        compute='_get_totals', string='Material profit')
     material_sell = fields.Float(
-        compute='_get_totals', string='Material sell',
-        multi='totals')
+        compute='_get_totals', string='Material sell')
     labor_cogs = fields.Float(
-        compute='_get_totals',string='Labor COGS',
-        multi='totals')
+        compute='_get_totals', string='Labor COGS')
     labor_overhead = fields.Float(
-        compute='_get_totals', type='float', string='Labor overhead',
-        multi='totals')
+        compute='_get_totals', string='Labor overhead')
     labor_cost = fields.Float(
-        compute='_get_totals', type='float', string='Labor cost',
-        multi='totals')
+        compute='_get_totals', string='Labor cost')
     labor_profit = fields.Float(
-        compute = '_get_totals', type='float', string='Labor profit',
-        multi='totals')
+        compute='_get_totals', string='Labor profit')
     labor_sell = fields.Float(
-        compute='_get_totals', string='Labor profit',
-        multi='totals')
+        compute='_get_totals', string='Labor profit')
     total_cogs = fields.Float(
-        compute = '_get_totals', string='Total COGS',
-        multi='totals')
+        compute='_get_totals', string='Total COGS')
     gross_profit = fields.Float(
-        compute = '_get_totals', string='Gross profit',
-        multi='totals')
+        compute='_get_totals', string='Gross profit')
     total_overhead = fields.Float(
-        compute = '_get_totals', string='Total overhead',
-        multi='totals')
+        compute='_get_totals', string='Total overhead')
     total_cost = fields.Float(
-        compute = '_get_totals', string='Total cost',
-        multi='totals')
+        compute='_get_totals', string='Total cost')
     total_profit = fields.Float(
-        compute = '_get_totals', string='Net profit',
-        multi='totals')
+        compute='_get_totals', string='Net profit')
     total_sell = fields.Float(
-        copute = '_get_totals', string='Revenue',
-        multi='totals')
+        compute='_get_totals', string='Revenue')
 
     @api.multi
     def _check_overhead(self):

@@ -82,7 +82,7 @@
                     <field name="total_cogs" sum="COGS"/>
                     <field name="total_overhead" sum="Overhead Cost"/>
                     <field name="total_profit" sum="Net Profit"/>
-                    <field name="total_sell" sum="Total Sell"/>
+                    <field name="total_sell" sum="Total Revenue"/>
                     <field name="gross_profit" sum="Gross Profit"/>
                 </tree>
             </field>
@@ -97,8 +97,8 @@
                     <group>
                         <field name="bid_component_template_id"
                                options="{'no_create': True}"/>
-                        <field name="bid_id" readonly="1"></field>
-                        <field name="name"></field>
+                        <field name="bid_id" readonly="1"/>
+                        <field name="name"/>
                         <field name="overhead_rate"/>
                         <field name="profit_rate"/>
                     </group>
@@ -225,7 +225,7 @@
                                         <field name="total_cogs" sum="COGS"/>
                                         <field name="total_overhead" sum="Overhead Cost"/>
                                         <field name="total_profit" sum="Net Profit"/>
-                                        <field name="total_sell" sum="Total Sell"/>
+                                        <field name="total_sell" sum="Total Revenue"/>
                                         <field name="gross_profit" sum="Gross Profit"/>
                                     </tree>
                                 </field>
