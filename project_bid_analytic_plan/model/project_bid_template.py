@@ -19,21 +19,19 @@
 #
 ##############################################################################
 
-from openerp.osv import fields, orm
+from openerp import models, fields
 
 
-class project_bid_template(orm.Model):
+class project_bid_template(models.Model):
     _inherit = 'project.bid.template'
 
-    _columns = {
-        'version_id': fields.many2one('account.analytic.plan.version',
-                                      'Planning Version', required=True,),
-        'revenue_product_id': fields.many2one('product.product',
-                                              'Revenue product',
-                                              required=True,),
+    version_id = fields.Many2one('account.analytic.plan.version',
+                                  'Planning Version', required=True,)
+    revenue_product_id = fields.Many2one('product.product',
+                                          'Revenue product',
+                                          required=True,)
 
-        'expense_product_id': fields.many2one('product.product',
-                                              'Default material '
-                                              'expenses product',
-                                              required=True,),
-    }
+    expense_product_id = fields.Many2one('product.product',
+                                          'Default material '
+                                          'expenses product',
+                                          required=True,)

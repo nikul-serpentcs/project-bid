@@ -19,35 +19,40 @@
 #
 ##############################################################################
 
-from openerp.osv import fields, orm
+from openerp import models, fields, api, exceptions
 from openerp.tools.translate import _
 import time
 import openerp.addons.decimal_precision as dp
 
 
-class project_bid(orm.Model):
+class project_bid(models.Model):
     _inherit = 'project.bid'
 
-    _columns = {
-        'project_id': fields.many2one(
+    project_id = fields.Many2one(
             'project.project', 'Project', required=False,
             ondelete='set null', select=True,
-            readonly=True, states={'draft': [('readonly', False)]}),
-        'plan_lines': fields.many2many(
+            readonly=True, states={'draft': [('readonly', False)]})
+    plan_lines = fields.Many2many(
             'account.analytic.line.plan',
+            'plan_lines_analytic_plan_rel',
+            'analytic_plan_id',
+            'plan_line_id',
             string='Analytic Plan Lines',
-            readonly=True),
-    }
+            readonly=True)
 
-    def copy(self, cr, uid, id, default=None, context=None):
+    @api.multi
+    def copy(self, default=None):
+        self.ensure_one()
         default = default or {}
         default.update({
             'plan_lines': []
         })
+        return super(project_bid, self).copy(default)
 
-    def _prepare_cost_plan_lines(self, cr, uid, line, context=None):
-        plan_version_obj = self.pool.get('account.analytic.plan.version')
+    @api.model
+    def _prepare_cost_plan_lines(self, line):
         res = {}
+        plan_version_obj = self.env['account.analytic.plan.version']
         res['value'] = {}
         if line.product_id:
             product_id = line.product_id
@@ -68,22 +73,20 @@ class project_bid(orm.Model):
             general_account_id = product_id.categ_id.\
                 property_account_expense_categ.id
         if not general_account_id:
-            raise orm.except_orm(_('Error !'),
+            raise exceptions.Warning(_('Error !'),
                                  _('There is no expense account defined '
                                    'for this product: "%s" (id:%d)')
                                  % (product_id.name,
                                     product_id.id,))
         default_plan_ids = plan_version_obj.search(
-            cr, uid, [('default_plan', '=', True)],  context=context)
+            [('default_plan', '=', True)])
         if default_plan_ids:
-            default_plan = plan_version_obj.browse(cr, uid,
-                                                   default_plan_ids[0],
-                                                   context=context)
+            default_plan = default_plan_ids[0]
         else:
             default_plan = False
 
         if account_id.active_analytic_planning_version != default_plan:
-            raise orm.except_orm(_('Error !'),
+            raise exceptions.Warning(_('Error !'),
                                  _('The active planning version of the '
                                    'analytic account must be %s. '
                                    '')
@@ -106,18 +109,19 @@ class project_bid(orm.Model):
             line.quantity,
         }]
 
-    def create_cost_plan_lines(self, cr, uid, line, context=None):
+    @api.model
+    def create_cost_plan_lines(self, line):
         res = []
-        line_plan_obj = self.pool.get('account.analytic.line.plan')
-        lines_vals = self._prepare_cost_plan_lines(cr, uid, line,
-                                                   context=context)
+        line_plan_obj = self.env['account.analytic.line.plan']
+        lines_vals = self._prepare_cost_plan_lines(line)
         for line_vals in lines_vals:
-            line_id = line_plan_obj.create(cr, uid, line_vals, context=context)
+            line_id = line_plan_obj.create(line_vals)
             res.append(line_id)
         return res
 
-    def _prepare_revenue_plan_lines(self, cr, uid, bid, context=None):
-        plan_version_obj = self.pool.get('account.analytic.plan.version')
+    @api.model
+    def _prepare_revenue_plan_lines(self, bid):
+        plan_version_obj = self.env['account.analytic.plan.version']
         res = {}
         res['value'] = {}
         account_id = bid.project_id.analytic_account_id
@@ -134,22 +138,20 @@ class project_bid(orm.Model):
             general_account_id = product_id.categ_id.\
                 property_account_income_categ.id
         if not general_account_id:
-            raise orm.except_orm(_('Error !'),
+            raise exceptions.Warning(_('Error !'),
                                  _('There is no expense account defined '
                                    'for this product: "%s" (id:%d)')
                                  % (product_id.name,
                                     product_id.id,))
         default_plan_ids = plan_version_obj.search(
-            cr, uid, [('default_plan', '=', True)],  context=context)
+            [('default_plan', '=', True)])
         if default_plan_ids:
-            default_plan = plan_version_obj.browse(cr, uid,
-                                                   default_plan_ids[0],
-                                                   context=context)
+            default_plan = default_plan_ids[0]
         else:
             default_plan = False
 
         if account_id.active_analytic_planning_version != default_plan:
-            raise orm.except_orm(_('Error !'),
+            raise exceptions.Warning(_('Error !'),
                                  _('The active planning version of the '
                                    'analytic account must be %s. '
                                    '')
@@ -170,62 +172,55 @@ class project_bid(orm.Model):
             'amount_currency': bid.total_income,
         }]
 
-    def create_revenue_plan_lines(self, cr, uid, bid, context=None):
+    @api.model
+    def create_revenue_plan_lines(self, bid):
         res = []
-        line_plan_obj = self.pool.get('account.analytic.line.plan')
-        lines_vals = self._prepare_revenue_plan_lines(cr, uid, bid,
-                                                      context=context)
+        line_plan_obj = self.env['account.analytic.line.plan']
+        lines_vals = self._prepare_revenue_plan_lines(bid)
         for line_vals in lines_vals:
-            line_id = line_plan_obj.create(cr, uid, line_vals, context=context)
+            line_id = line_plan_obj.create(line_vals)
             res.append(line_id)
         return res
 
-    def action_button_transfer_to_project(self, cr, uid, ids, form, context=None):
-        res = {}
-        if context is None:
-            context = {}
-        self._delete_analytic_lines(cr, uid, ids, context=context)
-        for bid in self.browse(cr, uid, ids, context=context):
+    @api.multi
+    def action_button_transfer_to_project(self):
+        self._delete_analytic_lines()
+        for bid in self:
             if not bid.project_id:
-                raise orm.except_orm(_('Error !'),
+                raise exceptions.Warning(_('Error !'),
                                      _('The bids must have a project '
                                        'assigned'))
             line_ids = []
             for component in bid.components:
                 line_ids.extend(self.create_cost_plan_lines(
-                    cr, uid, component, context=context))
+                    component))
                 for labor in component.labor:
-                    line_ids.extend(self.create_cost_plan_lines(
-                        cr, uid, labor, context=context))
+                    line_ids.extend(self.create_cost_plan_lines())
             for labor in bid.other_labor:
                 line_ids.extend(self.create_cost_plan_lines(
-                    cr, uid, labor, context=context))
+                    labor))
             for expense in bid.other_expenses:
                 line_ids.extend(self.create_cost_plan_lines(
-                    cr, uid, expense, context=context))
+                    expense))
             line_ids.extend(self.create_revenue_plan_lines(
-                cr, uid, bid, context=context))
-            self.write(cr, uid, bid.id, {'plan_lines': [(6, 0, line_ids)]},
-                       context=context)
-        return res
+                bid))
+            self.write(bid.id, {'plan_lines': [(6, 0, line_ids)]})
 
-    def _delete_analytic_lines(self, cr, uid, ids, context=None):
-        line_plan_obj = self.pool.get('account.analytic.line.plan')
-        for bid in self.browse(cr, uid, ids, context=context):
-            plan_lines = []
+    @api.multi
+    def _delete_analytic_lines(self):
+        for bid in self:
             for line in bid.plan_lines:
-                plan_lines.append(line.id)
-            line_plan_obj.unlink(cr, uid, plan_lines, context=context)
+                line.unlink()
         return True
 
-    def action_button_draft(self, cr, uid, ids, form, context=None):
-        res = super(project_bid, self).action_button_draft(
-            cr, uid, ids, form, context=context)
-        self._delete_analytic_lines(cr, uid, ids, context=context)
+    @api.multi
+    def action_button_draft(self):
+        res = super(project_bid, self).action_button_draft()
+        self._delete_analytic_lines()
         return res
 
-    def action_button_cancel(self, cr, uid, ids, form, context=None):
-        res = super(project_bid, self).action_button_cancel(
-            cr, uid, ids, form, context=context)
-        self._delete_analytic_lines(cr, uid, ids, context=context)
+    @api.multi
+    def action_button_cancel(self):
+        res = super(project_bid, self).action_button_cancel()
+        self._delete_analytic_lines()
         return res
