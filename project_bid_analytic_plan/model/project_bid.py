@@ -44,6 +44,8 @@ class project_bid(orm.Model):
         default.update({
             'plan_lines': []
         })
+        return super(project_bid, self).copy(cr, uid, id, default,
+                                             context=context)
 
     def _prepare_cost_plan_lines(self, cr, uid, line, context=None):
         plan_version_obj = self.pool.get('account.analytic.plan.version')

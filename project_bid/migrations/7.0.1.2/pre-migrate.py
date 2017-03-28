@@ -10,13 +10,16 @@ _logger = logging.getLogger(__name__)
 
 
 def migrate_bid_component_quantity(cr, registry):
-    print "\n\n migration script working, hurrah! \n\n\ "
-    cr.execute("""
-    ALTER TABLE project_bid_component ADD COLUMN quantity2 float
-    """)
-
-    cr.execute("""UPDATE project_bid_component SET quantity2
-                    = quantity""")
+    cr.execute("""SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name='project_bid_component' AND
+            column_name='quantity2'""")
+    if not cr.fetchone():
+        cr.execute("""
+        ALTER TABLE project_bid_component ADD COLUMN quantity2 float
+        """)
+        cr.execute("""UPDATE project_bid_component SET quantity2
+                        = quantity""")
 
 def migrate(cr, version):
     if not version:
