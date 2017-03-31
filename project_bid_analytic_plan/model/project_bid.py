@@ -44,6 +44,8 @@ class project_bid(orm.Model):
         default.update({
             'plan_lines': []
         })
+        return super(project_bid, self).copy(cr, uid, id, default,
+                                             context=context)
 
     def _prepare_cost_plan_lines(self, cr, uid, line, context=None):
         plan_version_obj = self.pool.get('account.analytic.plan.version')
@@ -192,8 +194,9 @@ class project_bid(orm.Model):
                                        'assigned'))
             line_ids = []
             for component in bid.components:
-                line_ids.extend(self.create_cost_plan_lines(
-                    cr, uid, component, context=context))
+                for material in component.material_ids:
+                    line_ids.extend(self.create_cost_plan_lines(
+                        cr, uid, material, context=context))
                 for labor in component.labor:
                     line_ids.extend(self.create_cost_plan_lines(
                         cr, uid, labor, context=context))

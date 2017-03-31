@@ -687,11 +687,14 @@ class project_bid(orm.Model):
     def copy(self, cr, uid, id, default=None, context=None):
         if default is None:
             default = {}
+        bid = self.browse(cr, uid, id, context=context)
         default.update({
             'state': 'draft',
-            'totals_all': [],
+            'name': ("%s (copy)") % (bid.name or ''),
         })
-        return super(project_bid, self).copy(cr, uid, id, default, context)
+
+        return super(project_bid, self).copy(cr, uid, id, default,
+                                             context=context)
 
     def action_button_confirm(self, cr, uid, ids, form, context=None):
         if context is None:
@@ -779,6 +782,38 @@ class project_bid_component(orm.Model):
     _name = 'project.bid.component'
     _description = "Project Bid Component"
 
+    def name_get(self, cr, uid, ids, context=None):
+
+        if not ids:
+            return []
+        if type(ids) is int:
+            ids = [ids]
+        new_list = []
+        for i in ids:
+            if i not in new_list:
+                new_list.append(i)
+        ids = new_list
+
+        res = []
+        obj = self.pool.get('project.bid')
+        for item in self.browse(cr, uid, ids, context=context):
+            data = []
+            bid_component = item
+            if bid_component.name:
+                data.insert(0, bid_component.name)
+            else:
+                data.insert(0, '')
+
+            data.insert(0, bid_component.bid_id.name)
+
+            data = ' / '.join(data)
+            res2 = obj.code_get(cr, uid,[bid_component.bid_id.id], context=None)
+            if res2:
+                data = '[' + res2[0][1] + '] ' + data
+
+            res.append((item.id, data))
+        return res
+
     def _get_totals(self, cr, uid, ids, name, args, context=None):
         res = dict.fromkeys(ids, False)
         for record in self.browse(cr, uid, ids, context=context):
@@ -787,6 +822,14 @@ class project_bid_component(orm.Model):
             labor_cost = 0.0
             labor_profit = 0.0
             labor_sell = 0.0
+
+            material_cogs = 0.0
+            material_overhead = 0.0
+            material_cost = 0.0
+            material_profit = 0.0
+            material_sell = 0.0
+            quantity = 0.0
+
             for labor in record.labor:
                 labor_cogs += labor.cogs
                 labor_overhead += labor.overhead
@@ -794,11 +837,13 @@ class project_bid_component(orm.Model):
                 labor_profit += labor.profit
                 labor_sell += labor.sell
 
-            material_cogs = record.quantity*record.unit_cost
-            material_overhead = material_cogs*record.overhead_rate/100
-            material_cost = material_overhead + material_cogs
-            material_profit = material_cogs*record.profit_rate/100
-            material_sell = material_cost + material_profit
+            for material in record.material_ids:
+                material_cogs += material.cogs
+                material_overhead += material.overhead
+                material_cost += material.cost
+                material_profit += material.profit
+                material_sell += material.sell
+                quantity += material.quantity
 
             total_cogs = material_cogs + labor_cogs
             total_overhead = material_overhead + labor_overhead
@@ -808,6 +853,7 @@ class project_bid_component(orm.Model):
             gross_profit = total_sell - total_cogs
 
             res[record.id] = {
+                'quantity': quantity,
                 'material_cogs': material_cogs,
                 'material_overhead': material_overhead,
                 'material_cost': material_cost,
@@ -838,15 +884,21 @@ class project_bid_component(orm.Model):
                                           readonly=True),
         'labor': fields.one2many('project.bid.component.labor',
                                  'bid_component_id', 'Labor'),
-        'product_id': fields.many2one('product.product', 'Material',
-                                      required=False),
+        'bid_component_template_id': fields.many2one('project.bid.component',
+                                            'Project Bid Component Template',
+                                            required=False,
+                                            ondelete='set null'),
+        'material_ids': fields.one2many('project.bid.component.material',
+                                        'bid_component_id',
+                                        'Materials'),
         'uom_id': fields.related('product_id', 'uom_id', string="UoM",
                                  type='many2one', relation='product.uom',
                                  readonly=True),
         'name': fields.char('Description', size=256, required=True),
-        'default_code': fields.char('Part #', help="Material Code"),
-        'quantity': fields.float('Quantity'),
-        'unit_cost': fields.float('Unit Cost'),
+        'quantity': fields.function(
+            _get_totals, type='float', string='Quantity',
+            multi='totals'),
+        # 'unit_cost': fields.float('Unit Cost'),
         'overhead_rate': fields.float(
             'Overhead %', digits_compute=dp.get_precision('Account')),
         'profit_rate': fields.float(
@@ -928,10 +980,16 @@ class project_bid_component(orm.Model):
             context = {}
         return context.get('overhead_rate', 0.0)
 
+    def _get_default_bid_id(self, cr, uid, context=None):
+        if context is None:
+            context = {}
+        return context.get('bid_id')
+
     _defaults = {
         'labor': _get_default_labor,
         'profit_rate': _get_default_profit_rate,
         'overhead_rate': _get_default_overhead_rate,
+        'bid_id': _get_default_bid_id,
     }
 
     def _check_overhead(self, cr, uid, ids, context=None):
@@ -943,18 +1001,143 @@ class project_bid_component(orm.Model):
     _constraints = [(_check_overhead, 'Error ! The overhead % must be > 0. ',
                      ['overhead'])]
 
+    def on_change_component_template_id(self, cr, uid, ids,
+                                        bid_component_template_id,
+                                        context=None):
+        values = {}
+        if bid_component_template_id:
+            bid_component_template = self.browse(cr,uid,
+                                       bid_component_template_id,
+                                       context=context)
+            on_write = False
+            if ids:
+                bid_component = self.browse(cr, uid,ids[0], context=context)
+                on_write = True
+
+            material_list = []
+            labor_list = []
+            if on_write:
+                for material in bid_component.material_ids:
+                    material_list.append((2, material.id, 0))
+
+            for material in  bid_component_template.material_ids:
+                materialdicc = {
+                    'bid_component_id': bid_component.id if on_write else None,
+                    'name': material.name,
+                    'quantity': material.quantity,
+                    'product_id':material.product_id.id,
+                    'default_code': material.default_code,
+                    'uom_id': material.uom_id.id,
+                    'bid_id': material.bid_id.id,
+                    'unit_cost': material.unit_cost,
+                    'cogs': material.cogs,
+                    'overhead': material.overhead,
+                    'cost': material.cost,
+                    'profit': material.profit,
+                    'sell': material.sell,
+                }
+
+                material_list.append((0, 0, materialdicc))
+
+            if on_write:
+                for labor in bid_component.labor:
+                    labor_list.append((2, labor.id, 0))
+
+            for labor in bid_component_template.labor:
+                labordicc = {
+                    'bid_component_id': bid_component.id if on_write else None,
+                    'name': labor.name,
+                    'quantity': labor.quantity,
+                    'product_id':labor.product_id.id,
+                    'uom_id': labor.uom_id.id,
+                    'bid_id': labor.bid_id.id,
+                    'unit_cost': labor.unit_cost,
+                    'cogs': labor.cogs,
+                    'overhead': labor.overhead,
+                    'cost': labor.cost,
+                    'profit': labor.profit,
+                    'sell': labor.sell,
+                }
+
+                labor_list.append((0, 0, labordicc))
+
+            values = {
+                'name': bid_component_template.name,
+                'material_ids': material_list,
+                'labor': labor_list,
+                'bid_component_template_id':False
+            }
+        return {'value': values}
+
+
+class project_bid_component_material(orm.Model):
+    _name = 'project.bid.component.material'
+    _description = "Project Bid Component Material"
+
+    def _get_totals(self, cr, uid, ids, name, args, context=None):
+        res = dict.fromkeys(ids, False)
+        for record in self.browse(cr, uid, ids, context=context):
+            total_cogs = record.quantity * record.unit_cost
+            total_overhead = \
+                record.bid_component_id.overhead_rate/100*total_cogs
+            total_cost = total_cogs + total_overhead
+            total_gross_profit = \
+                record.bid_component_id.profit_rate/100*total_cogs
+            total_sell = total_cost + total_gross_profit
+
+            res[record.id] = {
+                'cogs': total_cogs,
+                'overhead': total_overhead,
+                'cost': total_cost,
+                'profit': total_gross_profit,
+                'sell': total_sell,
+            }
+
+        return res
+
     def on_change_product_id(self, cr, uid, ids, product_id, context=None):
         values = {}
         if product_id:
-            product = self.pool.get('product.product').browse(cr, uid,
+            products = self.pool.get('product.product').browse(cr, uid,
                                                               product_id,
                                                               context=context)
-            values = {
-                'name': product.name,
-                'default_code': product.default_code,
-                'unit_cost': product.standard_price,
-            }
+            for product in [products]:
+                values = {
+                    'name': product.name,
+                    'default_code': product.default_code,
+                    'unit_cost': product.standard_price,
+                }
         return {'value': values}
+
+    _columns = {
+        'bid_component_id': fields.many2one('project.bid.component',
+                                            'Project Bid Component',
+                                            select=True, required=True,
+                                            ondelete='cascade'),
+        'bid_id': fields.related('bid_component_id', 'bid_id', string="Bid",
+                                 type='many2one', relation='project.bid',
+                                 readonly=True),
+        'product_id': fields.many2one('product.product',
+                                      'Material product'),
+        'name': fields.related('product_id', 'name', string="Description",
+                               type='char', readonly=True),
+        'quantity': fields.float('Quantity'),
+        'default_code': fields.char('Part #', help="Material Code"),
+        'uom_id': fields.related('product_id', 'uom_id', string="UoM",
+                                 type='many2one', relation='product.uom',
+                                 readonly=True),
+        'unit_cost': fields.float('Unit Cost', required=True),
+        'cogs': fields.function(_get_totals, type='float', multi='totals',
+                                string='Total COGS'),
+        'overhead': fields.function(_get_totals, type='float',
+                                    multi='totals', string='Total overhead'),
+        'cost': fields.function(_get_totals, type='float',
+                                multi='totals', string='Total costs'),
+        'profit': fields.function(_get_totals, type='float',
+                                  multi='totals', string='Net profit'),
+        'sell': fields.function(_get_totals, type='float',
+                                multi='totals', string='Revenue'),
+    }
 
 
 class project_bid_component_labor(orm.Model):
@@ -1012,7 +1195,6 @@ class project_bid_component_labor(orm.Model):
         'sell': fields.function(_get_totals, type='float',
                                 multi='totals', string='Revenue'),
     }
-
 
 class project_bid_other_labor(orm.Model):
     _name = 'project.bid.other.labor'
