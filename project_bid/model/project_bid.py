@@ -556,6 +556,8 @@ class project_bid(orm.Model):
                                      states={
                                          'draft': [('readonly', False)]
                                      }),
+        'child_ids': fields.one2many('project.bid', 'parent_id',
+                                     'Child bids'),
         'partner_id': fields.many2one('res.partner',
                                       'Customer', required=True, readonly=True,
                                       states={

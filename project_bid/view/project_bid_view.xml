@@ -242,6 +242,11 @@
                                 <field name="other_expenses"
                                        context="{'overhead_rate': overhead_rate, 'profit_rate': profit_rate}"/>
                             </page>
+                            <page string="WBS" name="children">
+                                <group>
+                                    <field name="child_ids"/>
+                                </group>
+                            </page>
                             <page string="WBS Totals"
                                   name="wbs_totals">
                                 <group>
