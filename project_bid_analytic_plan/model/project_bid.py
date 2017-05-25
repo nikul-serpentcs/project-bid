@@ -56,8 +56,10 @@ class project_bid(orm.Model):
         elif line.product_id:
             name = line.product_id.default_code
         else:
-            name = line.bid_component_id.name
-
+            raise orm.except_orm(_('Warning'),
+                                 _("All the material components have to "
+                                   "include at least a description or a "
+                                   "product"))
         if line.product_id:
             product_id = line.product_id
             uom_id = line.uom_id

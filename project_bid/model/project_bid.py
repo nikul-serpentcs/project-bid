@@ -1027,7 +1027,7 @@ class project_bid_component(orm.Model):
                     'bid_component_id': bid_component.id if on_write else None,
                     'name': material.name,
                     'quantity': material.quantity,
-                    'product_id':material.product_id.id,
+                    'product_id': material.product_id.id,
                     'default_code': material.default_code,
                     'uom_id': material.uom_id.id,
                     'bid_id': material.bid_id.id,
