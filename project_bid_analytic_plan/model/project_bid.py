@@ -51,6 +51,13 @@ class project_bid(orm.Model):
         plan_version_obj = self.pool.get('account.analytic.plan.version')
         res = {}
         res['value'] = {}
+        if line.name:
+            name = line.name
+        elif line.product_id:
+            name = line.product_id.default_code
+        else:
+            name = line.bid_component_id.name
+
         if line.product_id:
             product_id = line.product_id
             uom_id = line.uom_id
@@ -93,7 +100,7 @@ class project_bid(orm.Model):
 
         return [{
             'account_id': account_id.id,
-            'name': line.name,
+            'name': name,
             'date': time.strftime('%Y-%m-%d'),
             'product_id': product_id.id,
             'product_uom_id': uom_id.id,
