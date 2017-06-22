@@ -189,27 +189,28 @@
                                 <field name="parent_id"/>
                                 <field name="bid_template_id"/>
                             </group>
-                            <group>
-                                <field name="total_income"/>
-                                <field name="total_cogs"/>
-                                <field name="total_gp"/>
-                                <field name="total_gm_percent"/>
-                                <field name="total_overhead"/>
-                                <field name="total_npm"/>
-                                <field name="total_npm_percent"/>
+                           <group name="wbs_totals_header">
+                                <field name="wbs_total_income"/>
+                                <field name="wbs_total_cogs"/>
+                                <field name="wbs_total_gp"/>
+                                <field name="wbs_total_gm_percent"/>
+                                <field name="wbs_total_overhead"/>
+                                <field name="wbs_total_npm"/>
+                                <field name="wbs_total_npm_percent"/>
                             </group>
                         </group>
-                        <group>
+                        <group name="wbs_totals">
                             <group>
                                 <label string="Labor:"/>
                                 <newline/>
-                                <field name="totals_non_material" nolabel="1"/>
+                                <field name="wbs_totals_non_material"
+                                       nolabel="1"/>
                             </group>
                             <newline/>
                             <group>
                                 <label string="Totals:" />
                                 <newline/>
-                                <field name="totals_all" nolabel="1"/>
+                                <field name="wbs_totals_all" nolabel="1"/>
                             </group>
                         </group>
                         <notebook>
@@ -240,28 +241,33 @@
                                 <field name="other_expenses"
                                        context="{'overhead_rate': overhead_rate, 'profit_rate': profit_rate}"/>
                             </page>
-                            <page string="WBS Totals"
-                                  name="wbs_totals">
+                            <page string="WBS" name="children">
+                                <group>
+                                    <field name="child_ids"/>
+                                </group>
+                            </page>
+                            <page string="Bid Totals"
+                                  name="bid_totals">
                                 <group>
                                     <label string="Labor:"/>
                                     <newline/>
-                                    <field name="wbs_totals_non_material"
+                                    <field name="totals_non_material"
                                            nolabel="1"/>
                                 </group>
                                 <newline/>
                                 <group>
                                     <label string="Totals:" />
                                     <newline/>
-                                    <field name="wbs_totals_all" nolabel="1"/>
+                                    <field name="totals_all" nolabel="1"/>
                                 </group>
                                 <group>
-                                    <field name="wbs_total_income"/>
-                                    <field name="wbs_total_cogs"/>
-                                    <field name="wbs_total_gp"/>
-                                    <field name="wbs_total_gm_percent"/>
-                                    <field name="wbs_total_overhead"/>
-                                    <field name="wbs_total_npm"/>
-                                    <field name="wbs_total_npm_percent"/>
+                                    <field name="total_income"/>
+                                    <field name="total_cogs"/>
+                                    <field name="total_gp"/>
+                                    <field name="total_gm_percent"/>
+                                    <field name="total_overhead"/>
+                                    <field name="total_npm"/>
+                                    <field name="total_npm_percent"/>
                                 </group>
                             </page>
                             <page string="Notes" name="notes">

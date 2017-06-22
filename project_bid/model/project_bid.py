@@ -2,17 +2,17 @@
 # © 2015 Eficent Business and IT Consulting Services S.L.
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html).
 
-from openerp import models, fields, api
+from openerp import models, fields, api, _
 import time
 import openerp.addons.decimal_precision as dp
+from openerp.exceptions import ValidationError
 
 
-class project_bid_total_labor(models.TransientModel):
+class ProjectBidTotalLabor(models.TransientModel):
     _name = 'project.bid.total.labor'
     _description = "Project Bid Labor Totals"
 
-    bid_id = fields.Many2one('project.bid', string='Bid',
-                                  required=True)
+    bid_id = fields.Many2one('project.bid', string='Bid', required=True)
     name = fields.Char('Description', size=256)
     quantity = fields.Float('Hours')
     cogs = fields.Float('COGS')
@@ -22,7 +22,7 @@ class project_bid_total_labor(models.TransientModel):
     sell = fields.Float('Revenue')
 
 
-class project_bid_totals(models.TransientModel):
+class ProjectBidTotals(models.TransientModel):
     _name = 'project.bid.totals'
     _description = "Project Bid Totals"
 
@@ -35,10 +35,18 @@ class project_bid_totals(models.TransientModel):
     sell = fields.Float('Revenue')
 
 
-class project_bid(models.Model):
+class ProjectBid(models.Model):
     _name = 'project.bid'
     _description = "Project Bid"
     _inherit = ['mail.thread', 'ir.needaction_mixin']
+
+    @api.constrains('parent_id')
+    @api.one
+    def check_recursion(self):
+        if not super(ProjectBid, self)._check_recursion():
+            raise ValidationError(
+                _('The parent cannot be itself'),
+            )
 
     @api.multi
     def _get_child_bids(self):
@@ -533,6 +541,8 @@ class project_bid(models.Model):
                                      states={
                                          'draft': [('readonly', False)]
                                      })
+    child_ids = fields.One2many('project.bid', 'parent_id',
+                                'Child bids')
     partner_id = fields.Many2one('res.partner',
                                       'Customer', required=True, readonly=True,
                                       states={
@@ -650,20 +660,8 @@ class project_bid(models.Model):
             self.overhead_rate = self.bid_template_id.overhead_rate
             self.profit_rate = self.bid_template_id.profit_rate
 
-    def copy(self, cr, uid, id, default=None, context=None):
-        if default is None:
-            default = {}
-        bid = self.browse(cr, uid, id, context=context)
-        default.update({
-            'state': 'draft',
-            'name': ("%s (copy)") % (bid.name or ''),
-        })
-
-        return super(project_bid, self).copy(cr, uid, id, default,
-                                             context=context)
-
     @api.multi
-    def copy(self, default = None):
+    def copy(self, default=None):
         self.ensure_one()
         if default is None:
             default = {}
@@ -671,7 +669,7 @@ class project_bid(models.Model):
             'state': 'draft',
             'name': ("%s (copy)") % (self.name or ''),
         })
-        return super(project_bid, self).copy(default)
+        return super(ProjectBid, self).copy(default)
 
     @api.multi
     def action_button_confirm(self):
@@ -755,9 +753,41 @@ class project_bid(models.Model):
         return res
 
 
-class project_bid_component(models.Model):
+class ProjectBidComponent(models.Model):
     _name = 'project.bid.component'
     _description = "Project Bid Component"
+
+    def name_get(self, cr, uid, ids, context=None):
+        if not ids:
+            return []
+        if type(ids) is int:
+            ids = [ids]
+        new_list = []
+        for i in ids:
+            if i not in new_list:
+                new_list.append(i)
+        ids = new_list
+
+        res = []
+        obj = self.pool.get('project.bid')
+        for item in self.browse(cr, uid, ids, context=context):
+            data = []
+            bid_component = item
+            if bid_component.name:
+                data.insert(0, bid_component.name)
+            else:
+                data.insert(0, '')
+
+            data.insert(0, bid_component.bid_id.name)
+
+            data = ' / '.join(data)
+            res2 = obj.code_get(cr, uid,[bid_component.bid_id.id], context=None)
+            if res2:
+                data = '[' + res2[0][1] + '] ' + data
+
+            res.append((item.id, data))
+        return res
+
 
     @api.multi
     def _get_totals(self):
@@ -968,7 +998,7 @@ class project_bid_component(models.Model):
             self.bid_component_template_id = False
 
 
-class project_bid_component_material(models.Model):
+class ProjectBidComponentMaterial(models.Model):
     _name = 'project.bid.component.material'
     _description = "Project Bid Component Material"
 
@@ -997,23 +1027,20 @@ class project_bid_component_material(models.Model):
         material.unit_cost = material.product_id.standard_price
 
     bid_component_id = fields.Many2one('project.bid.component',
-                                            'Project Bid Component',
-                                            select=True, required=True,
-                                            ondelete='cascade')
-    bid_id = fields.Many2one(comodel_name = 'project.bid',
-                             realted = 'bid_component_id.bid_id', string="Bid",
-                             readonly=True)
+                                       'Project Bid Component',
+                                       select=True, required=True,
+                                       ondelete='cascade')
+    bid_id = fields.Many2one("Description")
     product_id = fields.Many2one('product.product','Material product')
-    name = fields.Char(related='product_id.name', string="Description",
-                       readonly=True)
+    name = fields.Char(related='product_id.name', string="Description")
     quantity =  fields.Float('Quantity')
     default_code = fields.Char('Part #', help="Material Code")
     uom_id = fields.Many2one(comodel_name='product.uom',
                              related='product_id.uom_id', string="UoM",
                              readonly=True)
-    unit_cost = fields.Float('unit_cost', required=True)
+    unit_cost = fields.Float('Unit Cost', required=True)
     cogs = fields.Float(compute = '_get_totals', multi='totals',
-                                string='Total labor COGS')
+                                string='Total COGS')
     overhead = fields.Float(compute='_get_totals', multi='totals',
                         string='Total overhead')
     cost = fields.Float(compute='_get_totals', multi='totals',
@@ -1024,7 +1051,7 @@ class project_bid_component_material(models.Model):
                         string='Revene')
 
 
-class project_bid_component_labor(models.Model):
+class ProjectBidComponentLabor(models.Model):
     _name = 'project.bid.component.labor'
     _description = "Project Bid Component Labor"
 
@@ -1076,7 +1103,7 @@ class project_bid_component_labor(models.Model):
                             multi='totals', string='Revenue')
 
 
-class project_bid_other_labor(models.Model):
+class ProjectBidOtherLabor(models.Model):
     _name = 'project.bid.other.labor'
     _description = "Project Bid Other Labor"
 
@@ -1155,7 +1182,7 @@ class project_bid_other_labor(models.Model):
                      ['uom_id', 'bid_id'])]
 
 
-class project_bid_other_expenses(models.Model):
+class ProjectBidOtherExpenses(models.Model):
     _name = 'project.bid.other.expenses'
     _description = "Project Bid Other Expenses"
 

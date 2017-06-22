@@ -5,9 +5,10 @@
 from openerp import models, fields, api
 from openerp.tools.translate import _
 import time
+from openerp.exceptions import ValidationError
 
 
-class project_bid_template(models.Model):
+class ProjectBidTemplate(models.Model):
     _name = 'project.bid.template'
     _description = "Project Bid Template"
 
@@ -25,13 +26,11 @@ class project_bid_template(models.Model):
                                         required=True)
 
     @api.multi
+    @api.constrains('default_component_labor', 'labor_uom_id')
     def _check_labor_uom(self):
         for template in self:
             for labor in template.default_component_labor:
                 if labor.uom_id.id is not template.labor_uom_id.id:
-                    return False
+                    raise ValidationError (_('The labor must be entered in the '
+                                           'default labor unit of measure.'))
         return True
-
-    _constraints = [(_check_labor_uom, 'Error ! The labor must be entered '
-                                       'in the default labor unit of measure.',
-                     ['labor_uom_id', 'default_component_labor'])]

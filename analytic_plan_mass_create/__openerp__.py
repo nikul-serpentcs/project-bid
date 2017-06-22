@@ -21,14 +21,13 @@
 
 {
     "name": "Analytic Plan Mass Create",
-    "version": "1.0",
+    "version": "9.0.1.0.0",
     "author": "Eficent",
     "website": "www.eficent.com",
     "category": "Generic Modules/Projects & Services",
     "depends": ["analytic_plan", "account"],
-    "description": """
+    "summary": """
 Analytic Plan Mass Create
-=========================
     """,
     "data": [
         "views/analytic_plan_mass_create_template_view.xml",
@@ -36,5 +35,4 @@ Analytic Plan Mass Create
         "security/ir.model.access.csv"
     ],
     'installable': False,
-    'active': False,
 }
