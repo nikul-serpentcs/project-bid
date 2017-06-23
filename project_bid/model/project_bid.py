@@ -780,6 +780,22 @@ class project_bid(orm.Model):
         return res
 
 
+    def _check_recursion(self, cr, uid, ids, context=None):
+        level = 100
+        while len(ids):
+            cr.execute('SELECT DISTINCT parent_id FROM project_bid WHERE'
+                       ' id IN %s AND parent_id=id', (tuple(ids),))
+            ids = filter(None, map(lambda x: x[0], cr.fetchall()))
+            if not level:
+                return False
+            level -= 1
+        return True
+
+    _constraints = [(_check_recursion, 'The parent cannot be itself',
+                     ['parent_id', 'name'])
+                    ]
+
+
 class project_bid_component(orm.Model):
     _name = 'project.bid.component'
     _description = "Project Bid Component"
