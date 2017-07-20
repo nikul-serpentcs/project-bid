@@ -1030,7 +1030,7 @@ class ProjectBidComponentMaterial(models.Model):
                                        'Project Bid Component',
                                        select=True, required=True,
                                        ondelete='cascade')
-    bid_id = fields.Many2one("Description")
+    bid_id = fields.Many2one(related="bid_component_id.bid_id", readonly=True)
     product_id = fields.Many2one('product.product','Material product')
     name = fields.Char(related='product_id.name', string="Description")
     quantity =  fields.Float('Quantity')
