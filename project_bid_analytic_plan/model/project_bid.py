@@ -165,7 +165,7 @@ class ProjectBid(models.Model):
                 raise UserError(_('The bids must have a project assigned'))
             line_ids = []
             for component in bid.components:
-                for material in component_material:
+                for material in component.material_ids:
                     line_ids.extend(bid.create_cost_plan_lines(material))
                 for labor in component.labor:
                     line_ids.extend(bid.create_cost_plan_lines(labor))
