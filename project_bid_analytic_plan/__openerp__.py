@@ -13,7 +13,7 @@
 Project Bid - Analytic Plan integration
 
     """,
-    "date": [
+    "data": [
         "view/project_bid_template_view.xml",
         "view/project_bid_view.xml",
     ],
