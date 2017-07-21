@@ -22,7 +22,7 @@ class ProjectBid(models.Model):
 
     @api.model
     def _prepare_cost_plan_lines(self, line):
-        plan_version_obj = self.pool.get('account.analytic.plan.version')
+        plan_version_obj = self.env['account.analytic.plan.version']
         res = {}
         res['value'] = {}
         if line.name:
@@ -47,21 +47,16 @@ class ProjectBid(models.Model):
         version_id = line.bid_id.bid_template_id.version_id.id or False
 
         general_account_id = product_id.product_tmpl_id.\
-            property_account_expense.id
+            property_account_expense_id.id
         if not general_account_id:
             general_account_id = product_id.categ_id.\
-                property_account_expense_categ.id
+                property_account_expense_categ_id.id
         if not general_account_id:
             raise UserError(_('There is no expense account defined '
                               'for this product: "%s" (id:%d)') %
                             (product_id.name, product_id.id,))
-        default_plan_ids = plan_version_obj.search(
-            [('default_plan', '=', True)])
-        if default_plan_ids:
-            default_plan = default_plan_ids[0]
-        else:
-            default_plan = False
-
+        default_plan = plan_version_obj.search(
+            [('default_plan', '=', True)], limit=1)
         if account_id.active_analytic_planning_version != default_plan:
             raise UserError(_('Error !'),
                             _('The active planning version of the '
@@ -88,11 +83,11 @@ class ProjectBid(models.Model):
     @api.model
     def create_cost_plan_lines(self, line):
         res = []
-        line_plan_obj = self.pool.get('account.analytic.line.plan')
+        line_plan_obj = self.env['account.analytic.line.plan']
         lines_vals = self._prepare_cost_plan_lines(line)
         for line_vals in lines_vals:
             line_id = line_plan_obj.create(line_vals)
-            res.append(line_id)
+            res.append(line_id.id)
         return res
 
     @api.multi
@@ -110,20 +105,16 @@ class ProjectBid(models.Model):
             version_id = bid.bid_template_id.version_id.id or False
 
             general_account_id = product_id.product_tmpl_id.\
-                property_account_income.id
+                property_account_income_id.id
             if not general_account_id:
                 general_account_id = product_id.categ_id.\
-                    property_account_income_categ.id
+                    property_account_income_categ_id.id
             if not general_account_id:
                 raise UserError(_('There is no expense account defined '
                                   'for this product: "%s" (id:%d)')
                                   % (product_id.name, product_id.id,))
-            default_plan_ids = plan_version_obj.search(
-                [('default_plan', '=', True)])
-            if default_plan_ids:
-                default_plan = plan_version_obj.browse(default_plan_ids[0])
-            else:
-                default_plan = False
+            default_plan = plan_version_obj.search(
+                [('default_plan', '=', True)], limit=1)
 
             if account_id.active_analytic_planning_version != default_plan:
                 raise UserError(_('The active planning version of the '
@@ -149,11 +140,11 @@ class ProjectBid(models.Model):
     def create_revenue_plan_lines(self):
         self.ensure_one()
         res = []
-        line_plan_obj = self.pool.get('account.analytic.line.plan')
+        line_plan_obj = self.env['account.analytic.line.plan']
         lines_vals = self._prepare_revenue_plan_lines()
         for line_vals in lines_vals:
             line_id = line_plan_obj.create(line_vals)
-            res.append(line_id)
+            res.append(line_id.id)
         return res
 
     @api.multi
@@ -174,8 +165,7 @@ class ProjectBid(models.Model):
             for expense in bid.other_expenses:
                 line_ids.extend(bid.create_cost_plan_lines(expense))
             line_ids.extend(bid.create_revenue_plan_lines())
-            self.write(cr, uid, bid.id, {'plan_lines': [(6, 0, line_ids)]},
-                       context=context)
+            bid.write({'plan_lines': [(6, 0, line_ids)]})
         return res
 
     @api.multi
