@@ -1032,12 +1032,12 @@ class ProjectBidComponentMaterial(models.Model):
                                        ondelete='cascade')
     bid_id = fields.Many2one(related="bid_component_id.bid_id", readonly=True)
     product_id = fields.Many2one('product.product','Material product')
-    name = fields.Char(related='product_id.name', string="Description")
+    name = fields.Char(related='product_id.name', string="Description",
+                       required=True)
     quantity =  fields.Float('Quantity')
     default_code = fields.Char('Part #', help="Material Code")
     uom_id = fields.Many2one(comodel_name='product.uom',
-                             related='product_id.uom_id', string="UoM",
-                             readonly=True)
+                             related='product_id.uom_id', string="UoM")
     unit_cost = fields.Float('Unit Cost', required=True)
     cogs = fields.Float(compute = '_get_totals', multi='totals',
                                 string='Total COGS')

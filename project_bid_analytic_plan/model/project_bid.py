@@ -41,11 +41,14 @@ class ProjectBid(models.Model):
             uom_id = product_id.uom_id
 
         account_id = line.bid_id.project_id.analytic_account_id
-        journal_id = product_id.expense_analytic_plan_journal_id \
-            and product_id.expense_analytic_plan_journal_id.id \
-            or False
+        journal_id = product_id.expense_analytic_plan_journal_id.id or False
+        if not journal_id:
+            raise UserError(_("Please add an expense analytic planning journal"
+                              " in the product %s" % product_id.name))
         version_id = line.bid_id.bid_template_id.version_id.id or False
-
+        if not version_id:
+            raise UserError(_("Please add an analytic planning version in the"
+                            " template"))
         general_account_id = product_id.product_tmpl_id.\
             property_account_expense_id.id
         if not general_account_id:
@@ -98,12 +101,16 @@ class ProjectBid(models.Model):
             res['value'] = {}
             account_id = bid.project_id.analytic_account_id
             product_id = bid.bid_template_id.revenue_product_id
-            journal_id = \
-                product_id.revenue_analytic_plan_journal_id \
-                and product_id.revenue_analytic_plan_journal_id.id \
-                or False
+            journal_id = product_id.revenue_analytic_plan_journal_id.id or False
+            if not journal_id:
+                raise UserError(
+                    _("Please add a revenue analytic planning journal"
+                      " in the product %s" % product_id.name))
             version_id = bid.bid_template_id.version_id.id or False
-
+            if not version_id:
+                raise UserError(
+                    _("Please add an analytic planning version in the"
+                      " template"))
             general_account_id = product_id.product_tmpl_id.\
                 property_account_income_id.id
             if not general_account_id:
