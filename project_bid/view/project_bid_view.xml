@@ -94,7 +94,7 @@
             <field name="type">form</field>
             <field name="arch" type="xml">
                 <form string="Project Bid Component" version="7.0">
-                    <group>
+                    <group name="component">
                         <field name="bid_component_template_id"
                                options="{'no_create': True}"/>
                         <field name="bid_id" readonly="1"/>
@@ -102,10 +102,10 @@
                         <field name="overhead_rate"/>
                         <field name="profit_rate"/>
                     </group>
-                    <group>
+                    <group name="material">
                         <field name="material_ids"/>
                     </group>
-                    <group>
+                    <group name="labor">
                         <field name="labor"/>
                     </group>
                 </form>
@@ -178,8 +178,8 @@
                         <field name="state" widget="statusbar"/>
                     </header>
                     <sheet>
-                        <group>
-                            <group>
+                        <group name="main" colspan="4" col="4">
+                            <group name="code" colspan="2">
                                 <field name="code"/>
                                 <field name="name" placeholder="Bid summary..."/>
                                 <field name="partner_id"
@@ -189,7 +189,7 @@
                                 <field name="parent_id"/>
                                 <field name="bid_template_id"/>
                             </group>
-                           <group name="wbs_totals_header">
+                            <group name="wbs_totals_header" colspan="2">
                                 <field name="wbs_total_income"/>
                                 <field name="wbs_total_cogs"/>
                                 <field name="wbs_total_gp"/>
@@ -199,15 +199,15 @@
                                 <field name="wbs_total_npm_percent"/>
                             </group>
                         </group>
-                        <group name="wbs_totals">
-                            <group>
+                        <group name="wbs_totals" colspan="4">
+                            <group name="labor" colspan="4">
                                 <label string="Labor:"/>
                                 <newline/>
                                 <field name="wbs_totals_non_material"
                                        nolabel="1"/>
                             </group>
                             <newline/>
-                            <group>
+                            <group name="totals" colspan="4">
                                 <label string="Totals:" />
                                 <newline/>
                                 <field name="wbs_totals_all" nolabel="1"/>

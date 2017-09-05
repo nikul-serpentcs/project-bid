@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# © 2015 Eficent Business and IT Consulting Services S.L.
+# © 2015-17 Eficent Business and IT Consulting Services S.L.
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html).
 
 from openerp import models, fields, api, _
@@ -1030,14 +1030,14 @@ class ProjectBidComponentMaterial(models.Model):
                                        'Project Bid Component',
                                        select=True, required=True,
                                        ondelete='cascade')
-    bid_id = fields.Many2one("Description")
+    bid_id = fields.Many2one(related="bid_component_id.bid_id", readonly=True)
     product_id = fields.Many2one('product.product','Material product')
-    name = fields.Char(related='product_id.name', string="Description")
-    quantity =  fields.Float('Quantity')
+    name = fields.Char(related='product_id.name', string="Description",
+                       required=True)
+    quantity = fields.Float('Quantity')
     default_code = fields.Char('Part #', help="Material Code")
     uom_id = fields.Many2one(comodel_name='product.uom',
-                             related='product_id.uom_id', string="UoM",
-                             readonly=True)
+                             related='product_id.uom_id', string="UoM")
     unit_cost = fields.Float('Unit Cost', required=True)
     cogs = fields.Float(compute = '_get_totals', multi='totals',
                                 string='Total COGS')
